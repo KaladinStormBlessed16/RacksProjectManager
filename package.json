@@ -1,0 +1,37 @@
+{
+    "name": "racks_project_manager",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "solhint 'contracts/*.sol'",
+        "lint:fix": "solhint 'contracts/**/*.sol' --fix",
+        "format": "prettier --write .",
+        "slither": "slither . --solc-remaps '@openzeppelin=node_modules/@openzeppelin --exclude naming-convention,external-function,low-level-calls"
+    },
+    "keywords": [],
+    "author": "Kaladin_Stormblessed",
+    "license": "ISC",
+    "devDependencies": {
+        "@nomicfoundation/hardhat-chai-matchers": "^1.0.2",
+        "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
+        "@nomiclabs/hardhat-etherscan": "^3.0.3",
+        "chai": "^4.3.6",
+        "ethers": "^5.6.8",
+        "hardhat": "^2.9.9",
+        "hardhat-contract-sizer": "^2.6.1",
+        "hardhat-deploy": "^0.10.5",
+        "hardhat-gas-reporter": "^1.0.8",
+        "prettier": "^2.7.1",
+        "solidity-coverage": "^0.7.21"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.6.0",
+        "dotenv": "^16.0.0",
+        "fs": "^0.0.1-security",
+        "path": "^0.12.7",
+        "prettier": "^2.7.1",
+        "prettier-plugin-solidity": "^1.0.0-beta.19"
+    }
+}
