@@ -16,9 +16,7 @@ interface IRacksProjectManager {
 
     function isAdmin(address account) external view returns (bool);
 
-    function getMRCAddress() external view returns (IMRC);
-
-    function getERC20Address() external view returns (IERC20);
+    function getERC20Interface() external view returns (IERC20);
 
     function isWalletContributor(address account) external view returns (bool);
 

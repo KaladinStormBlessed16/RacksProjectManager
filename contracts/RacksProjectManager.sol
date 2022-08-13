@@ -30,7 +30,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
-    Project[] private projects;
+    Project[] public projects;
     Contributor[] private contributors;
     mapping(address => bool) private walletIsContributor;
     mapping(address => Contributor) private accountToContributorData;
@@ -69,14 +69,16 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      */
     function createProject(
         uint256 colateralCost_,
-        uint256 reputationPointsReward_,
-        uint256 reputationLevel_
+        uint256 reputationLevel_,
+        uint256 maxContributorsNumber_
     ) external onlyAdmin {
+        if (colateralCost_ <= 0 || reputationLevel_ <= 0 || maxContributorsNumber_ <= 0)
+            revert projectInvalidParameterErr();
         Project newProject = new Project(
             this,
             colateralCost_,
-            reputationPointsReward_,
-            reputationLevel_
+            reputationLevel_,
+            maxContributorsNumber_
         );
         projects.push(newProject);
         emit newProjectCreated(address(newProject));
@@ -94,6 +96,15 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         walletIsContributor[msg.sender] = true;
         accountToContributorData[msg.sender] = newContributor;
         emit newContributorRegistered(msg.sender);
+    }
+
+    /**
+     * @notice Used to withdraw All funds
+     * @dev Only owner is able to call this function
+     */
+    function withdrawAllFunds(address wallet) external onlyOwner {
+        if (erc20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
+        if (!erc20.transfer(wallet, erc20.balanceOf(address(this)))) revert erc20TransferFailed();
     }
 
     ////////////////////////
@@ -128,6 +139,15 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         erc20 = IERC20(erc20_);
     }
 
+    /**
+     * @notice Toggle the banned state of a Contributor
+     * @dev Only callable by Admins.
+     */
+    function toggleContributorIsBanned(address account) external onlyAdmin {
+        Contributor storage contributor = accountToContributorData[account];
+        contributor.banned = !contributor.banned;
+    }
+
     ////////////////////////
     //  Getter Functions //
     //////////////////////
@@ -137,13 +157,8 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return hasRole(ADMIN_ROLE, account);
     }
 
-    /// @notice Returns MRC NFT address
-    function getMRCAddress() public view override returns (IMRC) {
-        return mrc;
-    }
-
     /// @notice Returns ERC20 address
-    function getERC20Address() public view override returns (IERC20) {
+    function getERC20Interface() public view override returns (IERC20) {
         return erc20;
     }
 
@@ -191,6 +206,4 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     function getContributorsNumber() external view onlyHolder returns (uint256) {
         return contributors.length;
     }
-
-    receive() external payable {}
 }
