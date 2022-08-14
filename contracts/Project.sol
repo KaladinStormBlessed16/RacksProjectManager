@@ -138,6 +138,22 @@ contract Project is Ownable, AccessControl {
         if (racksPM.getERC20Interface().balanceOf(address(this)) > 0) withdrawFunds();
     }
 
+    function giveAway() external onlyAdmin {
+        if (!completed) revert notCompletedErr();
+
+        if (address(this).balance <= 0) revert noFundsGiveAwayErr();
+        uint256 projectBalance = address(this).balance;
+        for (uint256 i = 0; i < projectContributors.length; i++) {
+            address contrAddress = projectContributors[i].wallet;
+            if (!racksPM.isContributorBanned(contrAddress)) {
+                (bool success, ) = contrAddress.call{
+                    value: (projectBalance * contributorToParticipationWeight[contrAddress]) / 100
+                }("");
+                if (!success) revert transferGiveAwayFailed();
+            }
+        }
+    }
+
     ////////////////////////
     //  Helper Functions //
     //////////////////////
@@ -238,4 +254,6 @@ contract Project is Ownable, AccessControl {
     function getContributorsNumber() external view returns (uint256) {
         return projectContributors.length;
     }
+
+    receive() external payable {}
 }

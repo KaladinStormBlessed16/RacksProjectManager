@@ -167,7 +167,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   ).to.be.revertedWithCustomError(projectContract, "projectFinishedErr");
               });
 
-              it("Should set the Project as finished, refund colateral and give away rewards", async () => {
+              it("Should set the Project as finished, refund colateral and grant rewards", async () => {
                   (await mrc.connect(user1).mint(1)).wait();
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
@@ -333,6 +333,50 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(colateralCost.toNumber()).to.be.equal(500);
                   const maxContributorsNumber = await projectContract.maxContributorsNumber();
                   expect(maxContributorsNumber.toNumber()).to.be.equal(5);
+              });
+          });
+
+          describe("Give away extra rewards after Project is finished", () => {
+              it("Should revert with adminErr", async () => {
+                  await expect(
+                      projectContract.connect(user1).giveAway()
+                  ).to.be.revertedWithCustomError(projectContract, "adminErr");
+              });
+
+              it("Should revert with notCompletedErr", async () => {
+                  await expect(projectContract.giveAway()).to.be.revertedWithCustomError(
+                      projectContract,
+                      "notCompletedErr"
+                  );
+              });
+
+              it("Should give away succesfully", async () => {
+                  (await mrc.connect(user1).mint(1)).wait();
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+
+                  (await mrc.connect(user2).mint(1)).wait();
+                  await racksPM.connect(user2).registerContributor();
+                  await erc20.connect(user2).approve(projectContract.address, 100);
+                  await projectContract.connect(user2).registerProjectContributor();
+
+                  await projectContract.finishProject(
+                      500,
+                      [user2.address, user1.address],
+                      [50, 50]
+                  );
+
+                  expect(await ethers.provider.getBalance(projectContract.address)).to.be.equal(0);
+                  await deployer.sendTransaction({ to: projectContract.address, value: 100 });
+
+                  expect(await ethers.provider.getBalance(projectContract.address)).to.be.equal(
+                      100
+                  );
+
+                  await projectContract.giveAway();
+
+                  expect(await ethers.provider.getBalance(projectContract.address)).to.be.equal(0);
               });
           });
       });
