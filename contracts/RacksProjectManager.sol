@@ -15,7 +15,7 @@ import "./Err.sol";
 //           ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
 //            ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
 //              ▀     █████   █████████▛      █████     ▟██████▛
-//                    █████   ███████▛      ▟█████▛   ▟██████▛
+//                    █████   ███████▛      ▟█████▛   ▟██████▛accountIsBanned
 //   ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
 //  ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
 // ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
@@ -31,8 +31,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
     Project[] public projects;
-    Contributor[] private contributors;
+    address[] private contributors;
     mapping(address => bool) private walletIsContributor;
+    mapping(address => bool) private accountIsBanned;
     mapping(address => Contributor) private accountToContributorData;
 
     /// @notice Check that user is Admin
@@ -91,10 +92,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     function registerContributor() external onlyHolder {
         if (walletIsContributor[msg.sender]) revert contributorAlreadyExistsErr();
 
-        Contributor memory newContributor = Contributor(msg.sender, 1, 0, false);
-        contributors.push(newContributor);
+        contributors.push(msg.sender);
         walletIsContributor[msg.sender] = true;
-        accountToContributorData[msg.sender] = newContributor;
+        accountToContributorData[msg.sender] = Contributor(msg.sender, 1, 0, false);
         emit newContributorRegistered(msg.sender);
     }
 
@@ -140,12 +140,19 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     }
 
     /**
-     * @notice Toggle the banned state of a Contributor
+     * @notice Set a ban state for a Contributor
      * @dev Only callable by Admins.
      */
-    function toggleContributorIsBanned(address account) external onlyAdmin {
-        Contributor storage contributor = accountToContributorData[account];
-        contributor.banned = !contributor.banned;
+    function setContributorStateToBanList(address account, bool state) external onlyAdmin {
+        accountIsBanned[account] = state;
+    }
+
+    /// @notice Set Contributor Data by address
+    function setAccountToContributorData(address account, Contributor memory newData)
+        public
+        override
+    {
+        accountToContributorData[account] = newData;
     }
 
     ////////////////////////
@@ -162,18 +169,55 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return erc20;
     }
 
+    /// @notice Returns Contract Owner
+    function getRacksPMOwner() public view override returns (address) {
+        return owner();
+    }
+
+    /**
+     * @notice Check whether an account is banned or not
+     * @dev Only callable by Admins.
+     */
+    function isContributorBanned(address account) external view override returns (bool) {
+        return accountIsBanned[account];
+    }
+
     /**
      * @notice Get  projects depending on Level
      * @dev Only callable by Holders
      */
     function getProjects() public view onlyHolder returns (Project[] memory) {
-        //TODO
-        return projects;
+        // return projects;
+        Project[] memory filteredProjects = new Project[](projects.length);
+        if (hasRole(ADMIN_ROLE, msg.sender)) return projects;
+        else if (walletIsContributor[msg.sender]) {
+            unchecked {
+                uint256 callerReputationLv = accountToContributorData[msg.sender].reputationLevel;
+                uint256 j = 0;
+                for (uint256 i = 0; i < projects.length; i++) {
+                    if (projects[i].reputationLevel() == callerReputationLv) {
+                        filteredProjects[j] = projects[i];
+                        j++;
+                    }
+                }
+            }
+        } else if (mrc.balanceOf(msg.sender) >= 1) {
+            unchecked {
+                uint256 j = 0;
+                for (uint256 i = 0; i < projects.length; i++) {
+                    if (projects[i].reputationLevel() == 1) {
+                        filteredProjects[j] = projects[i];
+                        j++;
+                    }
+                }
+            }
+        }
+        return filteredProjects;
     }
 
     /// @notice Get  Contributor by index
     function getContributor(uint256 index) public view returns (Contributor memory) {
-        return contributors[index];
+        return accountToContributorData[contributors[index]];
     }
 
     /// @notice Check whether an address is Contributor or not
@@ -181,7 +225,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return walletIsContributor[account];
     }
 
-    /// @notice Get  Contributor Data by address
+    /// @notice Get Contributor Data by address
     function getAccountToContributorData(address account)
         public
         view

@@ -18,10 +18,16 @@ interface IRacksProjectManager {
 
     function getERC20Interface() external view returns (IERC20);
 
+    function getRacksPMOwner() external view returns (address);
+
     function isWalletContributor(address account) external view returns (bool);
+
+    function isContributorBanned(address account) external view returns (bool);
 
     function getAccountToContributorData(address account)
         external
         view
         returns (Contributor memory);
+
+    function setAccountToContributorData(address account, Contributor memory newData) external;
 }

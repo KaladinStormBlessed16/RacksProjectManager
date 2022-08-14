@@ -54,11 +54,14 @@ contract Project is Ownable, AccessControl {
         uint256 reputationLevel_,
         uint256 maxContributorsNumber_
     ) {
+        if (colateralCost_ <= 0 || reputationLevel_ <= 0 || maxContributorsNumber_ <= 0)
+            revert projectInvalidParameterErr();
         racksPM = racksPM_;
         colateralCost = colateralCost_;
         reputationLevel = reputationLevel_;
         maxContributorsNumber = maxContributorsNumber_;
         _setupRole(ADMIN_ROLE, msg.sender);
+        _setupRole(ADMIN_ROLE, racksPM_.getRacksPMOwner());
     }
 
     ////////////////////////
@@ -75,7 +78,10 @@ contract Project is Ownable, AccessControl {
             revert maxContributorsNumberExceededErr();
 
         Contributor memory newProjectContributor = racksPM.getAccountToContributorData(msg.sender);
-        if (newProjectContributor.banned) revert projectContributorIsBannedErr();
+        if (racksPM.isContributorBanned(newProjectContributor.wallet))
+            revert projectContributorIsBannedErr();
+        if (newProjectContributor.reputationLevel < reputationLevel)
+            revert projectContributorHasNoReputationEnoughErr();
 
         projectContributors.push(newProjectContributor);
         walletIsProjectContributor[msg.sender] = true;
@@ -87,31 +93,46 @@ contract Project is Ownable, AccessControl {
     /**
      * @notice Finish Project
      * @dev Only callable by Admins when the project isn't completed
+     * - The contributors and participationWeights array must have the same size of the project contributors list.
+     * - If there is a banned Contributor in the project, you have to pass his address and participation (should be 0) anyways.
      */
     function finishProject(
         uint256 totalReputationPointsReward,
         address[] memory contributors_,
         uint256[] memory participationWeights_
     ) external onlyAdmin isNotFinished {
+        if (
+            totalReputationPointsReward <= 0 ||
+            contributors_.length < projectContributors.length ||
+            participationWeights_.length < projectContributors.length
+        ) revert projectInvalidParameterErr();
+
         completed = true;
-
-        for (uint256 i = 0; i < contributors_.length; i++) {
-            contributorToParticipationWeight[contributors_[i]] = participationWeights_[i];
+        unchecked {
+            for (uint256 i = 0; i < contributors_.length; i++) {
+                if (!walletIsProjectContributor[contributors_[i]]) revert contributorErr();
+                contributorToParticipationWeight[contributors_[i]] = participationWeights_[i];
+            }
         }
-
-        for (uint256 i = 0; i < projectContributors.length; i++) {
-            if (!projectContributors[i].banned) {
-                increaseContributorReputation(
-                    (totalReputationPointsReward *
-                        contributorToParticipationWeight[contributors_[i]]) / 100,
-                    projectContributors[i]
-                );
-                if (
-                    !racksPM.getERC20Interface().transfer(
+        unchecked {
+            for (uint256 i = 0; i < projectContributors.length; i++) {
+                if (!racksPM.isContributorBanned(projectContributors[i].wallet)) {
+                    increaseContributorReputation(
+                        (totalReputationPointsReward *
+                            contributorToParticipationWeight[projectContributors[i].wallet]) / 100,
+                        projectContributors[i]
+                    );
+                    racksPM.setAccountToContributorData(
                         projectContributors[i].wallet,
-                        colateralCost
-                    )
-                ) revert erc20TransferFailed();
+                        projectContributors[i]
+                    );
+                    if (
+                        !racksPM.getERC20Interface().transfer(
+                            projectContributors[i].wallet,
+                            colateralCost
+                        )
+                    ) revert erc20TransferFailed();
+                }
             }
         }
         if (racksPM.getERC20Interface().balanceOf(address(this)) > 0) withdrawFunds();
@@ -159,13 +180,13 @@ contract Project is Ownable, AccessControl {
         uint256 reputationPointsReward,
         Contributor storage contributor
     ) private onlyAdmin {
-        uint256 grossReputationPoints = contributor.reputationPoints + reputationPointsReward;
-        if (grossReputationPoints >= (contributor.reputationLevel * 100)) {
-            contributor.reputationPoints =
-                grossReputationPoints %
-                (contributor.reputationLevel * 100);
-            contributor.reputationLevel++;
-        } else {
+        unchecked {
+            uint256 grossReputationPoints = contributor.reputationPoints + reputationPointsReward;
+
+            while (grossReputationPoints >= (contributor.reputationLevel * 100)) {
+                grossReputationPoints -= (contributor.reputationLevel * 100);
+                contributor.reputationLevel++;
+            }
             contributor.reputationPoints = grossReputationPoints;
         }
     }
@@ -195,6 +216,18 @@ contract Project is Ownable, AccessControl {
      */
     function setReputationLevel(uint256 reputationLevel_) external onlyAdmin isEditable {
         reputationLevel = reputationLevel_;
+    }
+
+    /**
+     * @notice Edit the Reputation Level
+     * @dev Only callable by Admins when the project has no Contributor yet.
+     */
+    function setMaxContributorsNumber(uint256 maxContributorsNumber_)
+        external
+        onlyAdmin
+        isEditable
+    {
+        maxContributorsNumber = maxContributorsNumber_;
     }
 
     ////////////////////////

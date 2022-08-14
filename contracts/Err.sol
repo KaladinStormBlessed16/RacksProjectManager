@@ -13,3 +13,4 @@ error projectNoEditableErr();
 error projectInvalidParameterErr();
 error projectFinishedErr();
 error noFundsWithdrawErr();
+error projectContributorHasNoReputationEnoughErr();

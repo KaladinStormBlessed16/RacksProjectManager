@@ -96,4 +96,52 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   assert(contributor.wallet == user1.address);
               });
           });
+
+          describe("List Projects according to Contributor Level", () => {
+              it("Should revert if it is not Holder and it is not Admin", async () => {
+                  await expect(racksPM.connect(user1).getProjects()).to.be.revertedWithCustomError(
+                      racksPM,
+                      "holderErr"
+                  );
+              });
+
+              it("Should retieve only Lv1 Projects called by a Holder", async () => {
+                  await racksPM.createProject(100, 1, 2);
+                  await racksPM.createProject(100, 3, 2);
+
+                  (await mrc.connect(user1).mint(1)).wait();
+                  const projects = await racksPM.connect(user1).getProjects();
+                  let projectsNumber = 0;
+                  projects.map((project) => {
+                      if (project !== ethers.constants.AddressZero) projectsNumber++;
+                  });
+                  expect(projectsNumber).to.be.equal(2);
+              });
+
+              it("Should retieve only Lv1 Projects called by a Contributor", async () => {
+                  await racksPM.createProject(100, 1, 2);
+                  await racksPM.createProject(100, 3, 2);
+
+                  (await mrc.connect(user1).mint(1)).wait();
+                  await racksPM.connect(user1).registerContributor();
+                  const projects = await racksPM.connect(user1).getProjects();
+                  let projectsNumber = 0;
+                  projects.map((project) => {
+                      if (project !== ethers.constants.AddressZero) projectsNumber++;
+                  });
+                  expect(projectsNumber).to.be.equal(2);
+              });
+
+              it("Should retieve all Projects called by an Admin", async () => {
+                  await racksPM.createProject(100, 1, 2);
+                  await racksPM.createProject(100, 3, 2);
+
+                  const projects = await racksPM.getProjects();
+                  let projectsNumber = 0;
+                  projects.map((project) => {
+                      if (project !== ethers.constants.AddressZero) projectsNumber++;
+                  });
+                  expect(projectsNumber).to.be.equal(3);
+              });
+          });
       });
