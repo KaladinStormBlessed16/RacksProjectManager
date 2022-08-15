@@ -16,10 +16,10 @@ contract Project is Ownable, AccessControl {
     uint256 public colateralCost;
     uint256 public reputationLevel;
     uint256 public maxContributorsNumber;
+    bool public completed;
     Contributor[] public projectContributors;
     mapping(address => bool) public walletIsProjectContributor;
     mapping(address => uint256) public contributorToParticipationWeight;
-    bool public completed;
 
     /// @notice Check that the project has no contributors, therefore is editable
     modifier isEditable() {
@@ -142,14 +142,17 @@ contract Project is Ownable, AccessControl {
         if (!completed) revert notCompletedErr();
 
         if (address(this).balance <= 0) revert noFundsGiveAwayErr();
-        uint256 projectBalance = address(this).balance;
-        for (uint256 i = 0; i < projectContributors.length; i++) {
-            address contrAddress = projectContributors[i].wallet;
-            if (!racksPM.isContributorBanned(contrAddress)) {
-                (bool success, ) = contrAddress.call{
-                    value: (projectBalance * contributorToParticipationWeight[contrAddress]) / 100
-                }("");
-                if (!success) revert transferGiveAwayFailed();
+        unchecked {
+            uint256 projectBalance = address(this).balance;
+            for (uint256 i = 0; i < projectContributors.length; i++) {
+                address contrAddress = projectContributors[i].wallet;
+                if (!racksPM.isContributorBanned(contrAddress)) {
+                    (bool success, ) = contrAddress.call{
+                        value: (projectBalance * contributorToParticipationWeight[contrAddress]) /
+                            100
+                    }("");
+                    if (!success) revert transferGiveAwayFailed();
+                }
             }
         }
     }
