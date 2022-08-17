@@ -164,6 +164,11 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return hasRole(ADMIN_ROLE, account);
     }
 
+    /// @notice Returns MRC address
+    function getMRCInterface() external view returns (IMRC) {
+        return mrc;
+    }
+
     /// @notice Returns ERC20 address
     function getERC20Interface() public view override returns (IERC20) {
         return erc20;

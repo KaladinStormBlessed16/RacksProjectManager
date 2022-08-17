@@ -8,17 +8,20 @@ const networkConfig = {
     80001: {
         name: "mumbai",
     },
-}
+    137: {
+        name: "polygon",
+    },
+};
 
-const developmentChains = ["hardhat", "localhost"]
-const VERIFICATION_BLOCK_CONFIRMATIONS = 6
-const frontEndContractsFile = "../"
-const frontEndAbiLocation = "../"
+const developmentChains = ["hardhat", "localhost", "rinkeby"];
+const VERIFICATION_BLOCK_CONFIRMATIONS = 6;
+const backendContractsFile = "../Backend_RacksProjectManager/web3Constanst/networkMapping.json";
+const backendAbiLocation = "../Backend_RacksProjectManager/web3Constanst/";
 
 module.exports = {
     networkConfig,
     developmentChains,
     VERIFICATION_BLOCK_CONFIRMATIONS,
-    frontEndContractsFile,
-    frontEndAbiLocation,
-}
+    backendContractsFile,
+    backendAbiLocation,
+};
