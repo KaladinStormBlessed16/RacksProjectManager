@@ -1,40 +1,53 @@
-const { frontEndContractsFile, frontEndAbiLocation } = require("../helper-hardhat-config")
-require("dotenv").config()
-const fs = require("fs")
-const { network } = require("hardhat")
+const {
+    backendContractsFile,
+    backendAbiLocation,
+    networkConfig,
+} = require("../helper-hardhat-config");
+require("dotenv").config();
+const fs = require("fs");
+const { network } = require("hardhat");
 
 module.exports = async () => {
-    // console.log("Writing to front end...")
-    // await updateContractAddresses()
-    // await updateAbi()
-    // console.log("Front end written!")
-}
+    console.log("Exporting addresses and abi...");
+    await updateContractAddresses();
+    await updateAbi();
+    console.log("Json written!");
+};
 
 async function updateAbi() {
-    const nftMarketplace = await ethers.getContract("NftMarketplace")
+    const chainId = network.config.chainId.toString();
+    const racksProjectManager = await ethers.getContract("RacksProjectManager");
     fs.writeFileSync(
-        `${frontEndAbiLocation}NftMarketplace.json`,
-        nftMarketplace.interface.format(ethers.utils.FormatTypes.json)
-    )
+        `${backendAbiLocation}${networkConfig[chainId].name}/RacksProjectManager.json`,
+        racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
+    );
 
-    const basicNft = await ethers.getContract("BasicNft")
+    const mrCrypto = await ethers.getContract("MRCRYPTO");
     fs.writeFileSync(
-        `${frontEndAbiLocation}BasicNft.json`,
-        basicNft.interface.format(ethers.utils.FormatTypes.json)
-    )
+        `${backendAbiLocation}${networkConfig[chainId].name}/MRCRYPTO.json`,
+        mrCrypto.interface.format(ethers.utils.FormatTypes.json)
+    );
+
+    const mockErc20 = await ethers.getContract("MockErc20");
+    fs.writeFileSync(
+        `${backendAbiLocation}${networkConfig[chainId].name}/MockErc20.json`,
+        mockErc20.interface.format(ethers.utils.FormatTypes.json)
+    );
 }
 
 async function updateContractAddresses() {
-    const chainId = network.config.chainId.toString()
-    const nftMarketplace = await ethers.getContract("NftMarketplace")
-    const contractAddresses = JSON.parse(fs.readFileSync(frontEndContractsFile, "utf8"))
-    if (chainId in contractAddresses) {
-        if (!contractAddresses[chainId]["NftMarketplace"].includes(nftMarketplace.address)) {
-            contractAddresses[chainId]["NftMarketplace"].push(nftMarketplace.address)
-        }
-    } else {
-        contractAddresses[chainId] = { NftMarketplace: [nftMarketplace.address] }
-    }
-    fs.writeFileSync(frontEndContractsFile, JSON.stringify(contractAddresses))
+    const chainId = network.config.chainId.toString();
+    const racksProjectManager = await ethers.getContract("RacksProjectManager");
+    const MRCAddress = await racksProjectManager.getMRCInterface();
+    const MockErc20Address = await racksProjectManager.getERC20Interface();
+    const contractAddresses = JSON.parse(fs.readFileSync(backendContractsFile, "utf8"));
+
+    contractAddresses[chainId] = {
+        RacksProjectManager: [racksProjectManager.address],
+        MRCRYPTO: [MRCAddress],
+        MockErc20: [MockErc20Address],
+    };
+
+    fs.writeFileSync(backendContractsFile, JSON.stringify(contractAddresses));
 }
-module.exports.tags = ["all", "frontend"]
+module.exports.tags = ["all", "json"];

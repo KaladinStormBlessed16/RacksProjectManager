@@ -15,7 +15,7 @@ import "./Err.sol";
 //           ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
 //            ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
 //              ▀     █████   █████████▛      █████     ▟██████▛
-//                    █████   ███████▛      ▟█████▛   ▟██████▛accountIsBanned
+//                    █████   ███████▛      ▟█████▛   ▟██████▛
 //   ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
 //  ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
 // ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
@@ -162,6 +162,11 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     /// @notice Returns whether an address is admin or not
     function isAdmin(address account) public view override returns (bool) {
         return hasRole(ADMIN_ROLE, account);
+    }
+
+    /// @notice Returns MRC address
+    function getMRCInterface() external view returns (IMRC) {
+        return mrc;
     }
 
     /// @notice Returns ERC20 address
