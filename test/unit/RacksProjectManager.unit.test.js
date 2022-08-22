@@ -65,7 +65,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await racksPM.addAdmin(user1.address);
                   assert((await racksPM.isAdmin(user1.address)) == true);
                   await racksPM.connect(user1).createProject(100, 1, 2);
-                  const project2Address = await racksPM.projects(1);
+                  const project2Address = (await racksPM.getProjects())[1];
                   assert(project2Address !== undefined);
                   await racksPM.removeAdmin(user1.address);
                   await expect(

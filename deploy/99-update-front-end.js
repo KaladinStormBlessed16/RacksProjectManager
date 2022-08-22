@@ -5,6 +5,7 @@ const {
 } = require("../helper-hardhat-config");
 require("dotenv").config();
 const fs = require("fs");
+const path = require("path");
 const { network } = require("hardhat");
 
 module.exports = async () => {
@@ -32,6 +33,12 @@ async function updateAbi() {
     fs.writeFileSync(
         `${backendAbiLocation}${networkConfig[chainId].name}/MockErc20.json`,
         mockErc20.interface.format(ethers.utils.FormatTypes.json)
+    );
+
+    const project = await ethers.getContractFactory("Project");
+    fs.writeFileSync(
+        `${backendAbiLocation}${networkConfig[chainId].name}/Project.json`,
+        project.interface.format(ethers.utils.FormatTypes.json)
     );
 }
 

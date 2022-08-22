@@ -30,7 +30,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
-    Project[] public projects;
+    Project[] private projects;
     address[] private contributors;
     mapping(address => bool) private walletIsContributor;
     mapping(address => bool) private accountIsBanned;
