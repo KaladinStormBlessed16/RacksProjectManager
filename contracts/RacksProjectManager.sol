@@ -82,6 +82,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
             maxContributorsNumber_
         );
         projects.push(newProject);
+        _setupRole(ADMIN_ROLE, address(newProject));
         emit newProjectCreated(address(newProject));
     }
 
@@ -147,10 +148,14 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         accountIsBanned[account] = state;
     }
 
-    /// @notice Set Contributor Data by address
+    /**
+     * @notice Set Contributor Data by address
+     * @dev Only callable by Admins.
+     */
     function setAccountToContributorData(address account, Contributor memory newData)
         public
         override
+        onlyAdmin
     {
         accountToContributorData[account] = newData;
     }
