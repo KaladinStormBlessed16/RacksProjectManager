@@ -9,15 +9,16 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
           beforeEach(async () => {
               accounts = await ethers.getSigners(); // could also do with getNamedAccounts
-              deployer = accounts[0];
-              user1 = accounts[1];
-              user2 = accounts[2];
-              user3 = accounts[3];
+              [deployer, user1, user2, user3] = accounts;
+
               await deployments.fixture(["rackspm", "mocks"]);
+
               let racksPMContract = await ethers.getContract("RacksProjectManager");
               racksPM = racksPMContract.connect(deployer);
+
               let mrcContract = await ethers.getContract("MRCRYPTO");
               mrc = await mrcContract.connect(deployer);
+
               let erc20Contract = await ethers.getContract("MockErc20");
               erc20 = await erc20Contract.connect(deployer);
 
@@ -27,9 +28,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
               const Project = await ethers.getContractFactory("Project");
               projectContract = Project.attach(projectAddress);
 
-              (await erc20.connect(user1).mintMore()).wait();
-              (await erc20.connect(user2).mintMore()).wait();
-              (await erc20.connect(user3).mintMore()).wait();
+              await erc20.connect(user1).mintMore();
+              await erc20.connect(user2).mintMore();
+              await erc20.connect(user3).mintMore();
           });
 
           describe("Register Project Contributor", () => {
@@ -40,10 +41,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert with projectContributorAlreadyExistsErr and maxContributorsNumberExceededErr", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
-                  projectContract.connect(user1).registerProjectContributor();
+                  await projectContract.connect(user1).registerProjectContributor();
+
                   await expect(
                       projectContract.connect(user1).registerProjectContributor()
                   ).to.be.revertedWithCustomError(
@@ -51,11 +53,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       "projectContributorAlreadyExistsErr"
                   );
 
-                  (await mrc.connect(user2).mint(1)).wait();
+                  await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
                   await erc20.connect(user2).approve(projectContract.address, 100);
-                  projectContract.connect(user2).registerProjectContributor();
-                  (await mrc.connect(user3).mint(1)).wait();
+                  await projectContract.connect(user2).registerProjectContributor();
+
+                  await mrc.connect(user3).mint(1);
                   await racksPM.connect(user3).registerContributor();
                   await erc20.connect(user3).approve(projectContract.address, 100);
 
@@ -68,11 +71,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert if Contributor is banned with projectContributorIsBannedErr", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await racksPM.setContributorStateToBanList(user1.address, true);
-                  expect(await racksPM.isContributorBanned(user1.address)).to.be.equal(true);
+                  expect(await racksPM.isContributorBanned(user1.address)).to.be.true;
 
                   await expect(
                       projectContract.connect(user1).registerProjectContributor()
@@ -86,9 +89,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
 
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
+
                   await expect(
                       project2Contract.connect(user1).registerProjectContributor()
                   ).to.be.revertedWithCustomError(
@@ -98,12 +102,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should register a new Project Contributor", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
                   const projectContributor = await projectContract.projectContributors(0);
-                  assert(projectContributor.wallet !== undefined);
+                  assert(projectContributor.wallet === user1.address);
               });
           });
 
@@ -121,7 +125,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert with projectInvalidParameterErr", async () => {
-                  (await mrc.connect(user2).mint(1)).wait();
+                  await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
                   await erc20.connect(user2).approve(projectContract.address, 100);
                   await projectContract.connect(user2).registerProjectContributor();
@@ -139,13 +143,13 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
               });
 
-              it("Should revert because of less contributos array length than project contributors registered with projectInvalidParameterErr", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+              it("Should revert because of less contributors array length than project contributors registered with projectInvalidParameterErr", async () => {
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
 
-                  (await mrc.connect(user2).mint(1)).wait();
+                  await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
                   await erc20.connect(user2).approve(projectContract.address, 100);
                   await projectContract.connect(user2).registerProjectContributor();
@@ -156,7 +160,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert with projectFinishedErr", async () => {
-                  (await mrc.connect(user2).mint(1)).wait();
+                  await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
                   await erc20.connect(user2).approve(projectContract.address, 100);
                   await projectContract.connect(user2).registerProjectContributor();
@@ -168,7 +172,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should set the Project as finished, refund colateral and grant rewards", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   expect(await erc20.balanceOf(user1.address)).to.be.equal(10000000000);
@@ -210,12 +214,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should finish a project, create a new project, finish that project with a banned Contributor and withdraw the banned's lost colateral", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
 
-                  (await mrc.connect(user2).mint(1)).wait();
+                  await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
                   await erc20.connect(user2).approve(projectContract.address, 100);
                   await projectContract.connect(user2).registerProjectContributor();
@@ -232,7 +236,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
 
-                  (await mrc.connect(user3).mint(1)).wait();
+                  await mrc.connect(user3).mint(1);
                   await racksPM.connect(user3).registerContributor();
                   await erc20.connect(user3).approve(project2Contract.address, 100);
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(10000000000);
@@ -296,7 +300,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert with editable", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
@@ -316,7 +320,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   projectContract.setColateralCost(500);
                   projectContract.setMaxContributorsNumber(5);
 
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
 
@@ -350,8 +354,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   );
               });
 
-              it("Should give away succesfully", async () => {
-                  (await mrc.connect(user1).mint(1)).wait();
+              it("Should give away successfully", async () => {
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
