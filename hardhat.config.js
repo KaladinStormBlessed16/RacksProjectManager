@@ -4,12 +4,14 @@ require("hardhat-deploy");
 require("solidity-coverage");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");
+require("@nomiclabs/hardhat-solhint");
 require("dotenv").config({ path: ".env" });
 
 const RINKEBY_RPC_URL =
     process.env.RINKEBY_RPC_URL || "https://eth-rinkeby.alchemyapi.io/v2/your-api-key";
-const POLYGON_MAINNET_RPC_URL = "";
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
+const POLYGON_MAINNET_RPC_URL = "https://poligon.alchemyapi.io/v2/your-api-key";
+const PRIVATE_KEY =
+    process.env.PRIVATE_KEY || "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 
 module.exports = {

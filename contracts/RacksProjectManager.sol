@@ -75,12 +75,14 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     ) external onlyAdmin {
         if (colateralCost_ <= 0 || reputationLevel_ <= 0 || maxContributorsNumber_ <= 0)
             revert projectInvalidParameterErr();
+
         Project newProject = new Project(
             this,
             colateralCost_,
             reputationLevel_,
             maxContributorsNumber_
         );
+
         projects.push(newProject);
         _setupRole(ADMIN_ROLE, address(newProject));
         emit newProjectCreated(address(newProject));
@@ -88,7 +90,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /**
      * @notice Add Contributor
-     * @dev Only callable by Holders who are not aldeady Contributors
+     * @dev Only callable by Holders who are not already Contributors
      */
     function registerContributor() external onlyHolder {
         if (walletIsContributor[msg.sender]) revert contributorAlreadyExistsErr();
@@ -193,14 +195,15 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     }
 
     /**
-     * @notice Get  projects depending on Level
+     * @notice Get projects depending on Level
      * @dev Only callable by Holders
      */
     function getProjects() public view onlyHolder returns (Project[] memory) {
         // return projects;
         Project[] memory filteredProjects = new Project[](projects.length);
         if (hasRole(ADMIN_ROLE, msg.sender)) return projects;
-        else if (walletIsContributor[msg.sender]) {
+
+        if (walletIsContributor[msg.sender]) {
             unchecked {
                 uint256 callerReputationLv = accountToContributorData[msg.sender].reputationLevel;
                 uint256 j = 0;
@@ -225,7 +228,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return filteredProjects;
     }
 
-    /// @notice Get  Contributor by index
+    /// @notice Get Contributor by index
     function getContributor(uint256 index) public view returns (Contributor memory) {
         return accountToContributorData[contributors[index]];
     }
