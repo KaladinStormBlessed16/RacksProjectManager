@@ -198,8 +198,8 @@ contract Project is Ownable, AccessControl {
      */
     function increaseContributorReputation(
         uint256 reputationPointsReward,
-        Contributor memory contributor
-    ) private view onlyAdmin {
+        Contributor storage contributor
+    ) private onlyAdmin {
         unchecked {
             uint256 grossReputationPoints = contributor.reputationPoints + reputationPointsReward;
 
