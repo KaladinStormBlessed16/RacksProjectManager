@@ -70,7 +70,7 @@ contract Project is Ownable, AccessControl {
 
     /**
      * @notice Add Project Contributor
-     * @dev Only callable by Holders who are aldeady Contributors
+     * @dev Only callable by Holders who are already Contributors
      */
     function registerProjectContributor() external onlyContributor isNotFinished {
         if (walletIsProjectContributor[msg.sender]) revert projectContributorAlreadyExistsErr();
@@ -78,6 +78,7 @@ contract Project is Ownable, AccessControl {
             revert maxContributorsNumberExceededErr();
 
         Contributor memory newProjectContributor = racksPM.getAccountToContributorData(msg.sender);
+
         if (racksPM.isContributorBanned(newProjectContributor.wallet))
             revert projectContributorIsBannedErr();
         if (newProjectContributor.reputationLevel < reputationLevel)
@@ -211,7 +212,7 @@ contract Project is Ownable, AccessControl {
     }
 
     /**
-     * @notice Provides information about supported interfaces (required by AccesControl)
+     * @notice Provides information about supported interfaces (required by AccessControl)
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return super.supportsInterface(interfaceId);
@@ -222,7 +223,7 @@ contract Project is Ownable, AccessControl {
     //////////////////////
 
     /**
-     * @notice Edit the Colatera lCost
+     * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
     function setColateralCost(uint256 colateralCost_) external onlyAdmin isEditable {
