@@ -223,7 +223,7 @@ contract Project is Ownable, AccessControl {
     //////////////////////
 
     /**
-     * @notice Edit the Colateral lCost
+     * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
     function setColateralCost(uint256 colateralCost_) external onlyAdmin isEditable {
