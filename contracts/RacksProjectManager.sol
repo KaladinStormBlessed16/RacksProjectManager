@@ -54,9 +54,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         _;
     }
 
-    constructor(IMRC mrc_, IERC20 erc20_) {
-        erc20 = erc20_;
-        mrc = mrc_;
+    constructor(IMRC _mrc, IERC20 _erc20) {
+        erc20 = _erc20;
+        mrc = _mrc;
         _setupRole(ADMIN_ROLE, msg.sender);
     }
 
@@ -69,18 +69,18 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @dev Only callable by Admins
      */
     function createProject(
-        uint256 colateralCost_,
-        uint256 reputationLevel_,
-        uint256 maxContributorsNumber_
+        uint256 _colateralCost,
+        uint256 _reputationLevel,
+        uint256 _maxContributorsNumber
     ) external onlyAdmin {
-        if (colateralCost_ <= 0 || reputationLevel_ <= 0 || maxContributorsNumber_ <= 0)
+        if (_colateralCost <= 0 || _reputationLevel <= 0 || _maxContributorsNumber <= 0)
             revert projectInvalidParameterErr();
 
         Project newProject = new Project(
             this,
-            colateralCost_,
-            reputationLevel_,
-            maxContributorsNumber_
+            _colateralCost,
+            _reputationLevel,
+            _maxContributorsNumber
         );
 
         projects.push(newProject);
@@ -105,9 +105,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Used to withdraw All funds
      * @dev Only owner is able to call this function
      */
-    function withdrawAllFunds(address wallet) external onlyOwner {
+    function withdrawAllFunds(address _wallet) external onlyOwner {
         if (erc20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
-        if (!erc20.transfer(wallet, erc20.balanceOf(address(this)))) revert erc20TransferFailed();
+        if (!erc20.transfer(_wallet, erc20.balanceOf(address(this)))) revert erc20TransferFailed();
     }
 
     ////////////////////////
@@ -126,8 +126,8 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Remove an account from the user role
      * @dev Only callable by the Admin
      */
-    function removeAdmin(address account) external virtual onlyOwner {
-        revokeRole(ADMIN_ROLE, account);
+    function removeAdmin(address _account) external virtual onlyOwner {
+        revokeRole(ADMIN_ROLE, _account);
     }
 
     ////////////////////////
@@ -138,28 +138,28 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Set new ERC20 Token
      * @dev Only callable by the Admin
      */
-    function setERC20Address(address erc20_) external onlyAdmin {
-        erc20 = IERC20(erc20_);
+    function setERC20Address(address _erc20) external onlyAdmin {
+        erc20 = IERC20(_erc20);
     }
 
     /**
      * @notice Set a ban state for a Contributor
      * @dev Only callable by Admins.
      */
-    function setContributorStateToBanList(address account, bool state) external onlyAdmin {
-        accountIsBanned[account] = state;
+    function setContributorStateToBanList(address _account, bool _state) external onlyAdmin {
+        accountIsBanned[_account] = _state;
     }
 
     /**
      * @notice Set Contributor Data by address
      * @dev Only callable by Admins.
      */
-    function setAccountToContributorData(address account, Contributor memory newData)
+    function setAccountToContributorData(address _account, Contributor memory _newData)
         public
         override
         onlyAdmin
     {
-        accountToContributorData[account] = newData;
+        accountToContributorData[_account] = _newData;
     }
 
     ////////////////////////
@@ -167,8 +167,8 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     //////////////////////
 
     /// @notice Returns whether an address is admin or not
-    function isAdmin(address account) public view override returns (bool) {
-        return hasRole(ADMIN_ROLE, account);
+    function isAdmin(address _account) public view override returns (bool) {
+        return hasRole(ADMIN_ROLE, _account);
     }
 
     /// @notice Returns MRC address
@@ -190,8 +190,8 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Check whether an account is banned or not
      * @dev Only callable by Admins.
      */
-    function isContributorBanned(address account) external view override returns (bool) {
-        return accountIsBanned[account];
+    function isContributorBanned(address _account) external view override returns (bool) {
+        return accountIsBanned[_account];
     }
 
     /**
@@ -229,23 +229,23 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     }
 
     /// @notice Get Contributor by index
-    function getContributor(uint256 index) public view returns (Contributor memory) {
-        return accountToContributorData[contributors[index]];
+    function getContributor(uint256 _index) public view returns (Contributor memory) {
+        return accountToContributorData[contributors[_index]];
     }
 
     /// @notice Check whether an address is Contributor or not
-    function isWalletContributor(address account) public view override returns (bool) {
-        return walletIsContributor[account];
+    function isWalletContributor(address _account) public view override returns (bool) {
+        return walletIsContributor[_account];
     }
 
     /// @notice Get Contributor Data by address
-    function getAccountToContributorData(address account)
+    function getAccountToContributorData(address _account)
         public
         view
         override
         returns (Contributor memory)
     {
-        return accountToContributorData[account];
+        return accountToContributorData[_account];
     }
 
     /**
