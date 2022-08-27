@@ -100,7 +100,7 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins when the project isn't completed
      * - The contributors and participationWeights array must have the same size of the project contributors list.
      * - If there is a banned Contributor in the project, you have to pass his address and participation (should be 0) anyways.
-     * - The sum of @param participationWeights_ can not be more than 100
+     * - The sum of @param _participationWeights can not be more than 100
      */
     function finishProject(
         uint256 _totalReputationPointsReward,
