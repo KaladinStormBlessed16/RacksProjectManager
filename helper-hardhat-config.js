@@ -17,6 +17,8 @@ const developmentChains = ["hardhat", "localhost", "rinkeby"];
 const VERIFICATION_BLOCK_CONFIRMATIONS = 6;
 const backendContractsFile = "../Backend_RacksProjectManager/web3Constanst/networkMapping.json";
 const backendAbiLocation = "../Backend_RacksProjectManager/web3Constanst/";
+const frontendContractsFile = "../Frontend_RacksProjectManager/web3Constanst/networkMapping.json";
+const frontendAbiLocation = "../Frontend_RacksProjectManager/web3Constanst/";
 
 module.exports = {
     networkConfig,
@@ -24,4 +26,6 @@ module.exports = {
     VERIFICATION_BLOCK_CONFIRMATIONS,
     backendContractsFile,
     backendAbiLocation,
+    frontendContractsFile,
+    frontendAbiLocation,
 };

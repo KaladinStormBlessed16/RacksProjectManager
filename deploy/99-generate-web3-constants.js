@@ -1,6 +1,8 @@
 const {
     backendContractsFile,
     backendAbiLocation,
+    frontendContractsFile,
+    frontendAbiLocation,
     networkConfig,
 } = require("../helper-hardhat-config");
 require("dotenv").config();
@@ -22,10 +24,18 @@ async function updateAbi() {
         `${backendAbiLocation}${networkConfig[chainId].name}/RacksProjectManager.json`,
         racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
     );
+    fs.writeFileSync(
+        `${frontendAbiLocation}${networkConfig[chainId].name}/RacksProjectManager.json`,
+        racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
+    );
 
     const mrCrypto = await ethers.getContract("MRCRYPTO");
     fs.writeFileSync(
         `${backendAbiLocation}${networkConfig[chainId].name}/MRCRYPTO.json`,
+        mrCrypto.interface.format(ethers.utils.FormatTypes.json)
+    );
+    fs.writeFileSync(
+        `${frontendAbiLocation}${networkConfig[chainId].name}/MRCRYPTO.json`,
         mrCrypto.interface.format(ethers.utils.FormatTypes.json)
     );
 
@@ -34,10 +44,18 @@ async function updateAbi() {
         `${backendAbiLocation}${networkConfig[chainId].name}/MockErc20.json`,
         mockErc20.interface.format(ethers.utils.FormatTypes.json)
     );
+    fs.writeFileSync(
+        `${frontendAbiLocation}${networkConfig[chainId].name}/MockErc20.json`,
+        mockErc20.interface.format(ethers.utils.FormatTypes.json)
+    );
 
     const project = await ethers.getContractFactory("Project");
     fs.writeFileSync(
         `${backendAbiLocation}${networkConfig[chainId].name}/Project.json`,
+        project.interface.format(ethers.utils.FormatTypes.json)
+    );
+    fs.writeFileSync(
+        `${frontendAbiLocation}${networkConfig[chainId].name}/Project.json`,
         project.interface.format(ethers.utils.FormatTypes.json)
     );
 }
@@ -56,5 +74,6 @@ async function updateContractAddresses() {
     };
 
     fs.writeFileSync(backendContractsFile, JSON.stringify(contractAddresses));
+    fs.writeFileSync(frontendContractsFile, JSON.stringify(contractAddresses));
 }
 module.exports.tags = ["all", "json"];
