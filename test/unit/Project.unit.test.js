@@ -119,6 +119,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert with contributorErr", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+
                   await expect(
                       projectContract.finishProject(500, [user2.address], [20])
                   ).to.be.revertedWithCustomError(projectContract, "contributorErr");
@@ -156,6 +161,26 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   await expect(
                       projectContract.finishProject(500, [user2.address], [100])
+                  ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+              });
+
+              it("Should revert becase de total of participation weight is greeter than 100 ", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  expect(await erc20.balanceOf(user1.address)).to.be.equal(10000000000);
+                  await projectContract.connect(user1).registerProjectContributor();
+                  expect(await erc20.balanceOf(user1.address)).to.be.equal(9999999900);
+
+                  (await mrc.connect(user2).mint(1)).wait();
+                  await racksPM.connect(user2).registerContributor();
+                  await erc20.connect(user2).approve(projectContract.address, 100);
+                  expect(await erc20.balanceOf(user2.address)).to.be.equal(10000000000);
+                  await projectContract.connect(user2).registerProjectContributor();
+                  expect(await erc20.balanceOf(user2.address)).to.be.equal(9999999900);
+
+                  await expect(
+                      projectContract.finishProject(500, [user2.address, user1.address], [70, 70])
                   ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
               });
 

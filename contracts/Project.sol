@@ -87,8 +87,12 @@ contract Project is Ownable, AccessControl {
         projectContributors.push(newProjectContributor);
         walletIsProjectContributor[msg.sender] = true;
         emit newProjectContributorsRegistered(msg.sender);
-        if (!racksPM.getERC20Interface().transferFrom(msg.sender, address(this), colateralCost))
-            revert erc20TransferFailed();
+        bool success = racksPM.getERC20Interface().transferFrom(
+            msg.sender,
+            address(this),
+            colateralCost
+        );
+        if (!success) revert erc20TransferFailed();
     }
 
     /**
@@ -104,16 +108,22 @@ contract Project is Ownable, AccessControl {
     ) external onlyAdmin isNotFinished {
         if (
             _totalReputationPointsReward <= 0 ||
-            _contributors.length < projectContributors.length ||
-            _participationWeights.length < projectContributors.length
+            _contributors.length != projectContributors.length ||
+            _participationWeights.length != projectContributors.length
         ) revert projectInvalidParameterErr();
 
         completed = true;
+        uint256 totalParticipationWeight = 0;
         unchecked {
             for (uint256 i = 0; i < _contributors.length; i++) {
                 if (!walletIsProjectContributor[_contributors[i]]) revert contributorErr();
-                contributorToParticipationWeight[_contributors[i]] = _participationWeights[i];
+
+                uint256 participationWeight = _participationWeights[i];
+
+                contributorToParticipationWeight[_contributors[i]] = participationWeight;
+                totalParticipationWeight += participationWeight;
             }
+            if (totalParticipationWeight > 100) revert projectInvalidParameterErr();
         }
         unchecked {
             for (uint256 i = 0; i < projectContributors.length; i++) {
