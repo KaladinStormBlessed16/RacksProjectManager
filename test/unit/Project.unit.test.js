@@ -1,4 +1,5 @@
 const { assert, expect } = require("chai");
+const { BigNumber } = require("ethers");
 const { network, deployments, ethers } = require("hardhat");
 const { developmentChains } = require("../../helper-hardhat-config");
 
@@ -106,7 +107,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
-                  const projectContributor = await projectContract.projectContributors(0);
+                  const projectContributor = await projectContract.getProjectContributor(0);
                   assert(projectContributor.wallet === user1.address);
               });
           });
@@ -119,6 +120,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should revert with contributorErr", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+
                   await expect(
                       projectContract.finishProject(500, [user2.address], [20])
                   ).to.be.revertedWithCustomError(projectContract, "contributorErr");
@@ -159,6 +165,26 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
               });
 
+              it("Should revert becase de total of participation weight is greeter than 100 ", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  expect(await erc20.balanceOf(user1.address)).to.be.equal(10000000000);
+                  await projectContract.connect(user1).registerProjectContributor();
+                  expect(await erc20.balanceOf(user1.address)).to.be.equal(9999999900);
+
+                  (await mrc.connect(user2).mint(1)).wait();
+                  await racksPM.connect(user2).registerContributor();
+                  await erc20.connect(user2).approve(projectContract.address, 100);
+                  expect(await erc20.balanceOf(user2.address)).to.be.equal(10000000000);
+                  await projectContract.connect(user2).registerProjectContributor();
+                  expect(await erc20.balanceOf(user2.address)).to.be.equal(9999999900);
+
+                  await expect(
+                      projectContract.finishProject(500, [user2.address, user1.address], [70, 70])
+                  ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+              });
+
               it("Should revert with projectFinishedErr", async () => {
                   await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
@@ -196,14 +222,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await erc20.balanceOf(user2.address)).to.be.equal(10000000000);
 
                   expect(
-                      await projectContract.contributorToParticipationWeight(user1.address)
+                      await projectContract.getContributorParticipationWeight(user1.address)
                   ).to.be.equal(30);
                   expect(
-                      await projectContract.contributorToParticipationWeight(user2.address)
+                      await projectContract.getContributorParticipationWeight(user2.address)
                   ).to.be.equal(70);
 
-                  const pcUser1 = await projectContract.projectContributors(0);
-                  const pcUser2 = await projectContract.projectContributors(1);
+                  const pcUser1 = await projectContract.getProjectContributor(0);
+                  const pcUser2 = await projectContract.getProjectContributor(1);
 
                   expect(pcUser1.wallet).to.be.equal(user1.address);
                   expect(pcUser1.reputationLevel).to.be.equal(2);
@@ -260,12 +286,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(9999999900);
 
                   expect(
-                      await project2Contract.contributorToParticipationWeight(user3.address)
+                      await project2Contract.getContributorParticipationWeight(user3.address)
                   ).to.be.equal(0);
 
-                  const pcUserBanned = await project2Contract.projectContributors(0);
-                  const pcUser1 = await project2Contract.projectContributors(1);
-                  const pcUser2 = await project2Contract.projectContributors(2);
+                  const pcUserBanned = await project2Contract.getProjectContributor(0);
+                  const pcUser1 = await project2Contract.getProjectContributor(1);
+                  const pcUser2 = await project2Contract.getProjectContributor(2);
 
                   expect(pcUserBanned.wallet).to.be.equal(user3.address);
                   expect(pcUserBanned.reputationLevel).to.be.equal(1);
@@ -331,11 +357,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       "projectContributorHasNoReputationEnoughErr"
                   );
 
-                  const reputationLv = await projectContract.reputationLevel();
+                  const reputationLv = await projectContract.getReputationLevel();
                   expect(reputationLv.toNumber()).to.be.equal(3);
-                  const colateralCost = await projectContract.colateralCost();
+                  const colateralCost = await projectContract.getColateralCost();
                   expect(colateralCost.toNumber()).to.be.equal(500);
-                  const maxContributorsNumber = await projectContract.maxContributorsNumber();
+                  const maxContributorsNumber = await projectContract.getMaxContributors();
                   expect(maxContributorsNumber.toNumber()).to.be.equal(5);
               });
           });

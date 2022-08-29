@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./IRacksProjectManager.sol";
 import "./Contributor.sol";
@@ -13,13 +14,14 @@ contract Project is Ownable, AccessControl {
 
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
-    uint256 public colateralCost;
-    uint256 public reputationLevel;
-    uint256 public maxContributorsNumber;
-    bool public completed;
-    Contributor[] public projectContributors;
-    mapping(address => bool) public walletIsProjectContributor;
-    mapping(address => uint256) public contributorToParticipationWeight;
+    uint256 private colateralCost;
+    uint256 private reputationLevel;
+    uint256 private maxContributorsNumber;
+    bool private completed;
+    Contributor[] private projectContributors;
+    mapping(address => bool) private walletIsProjectContributor;
+    mapping(address => uint256) private contributorToParticipationWeight;
+    IERC20 private immutable racksPM_ERC20;
 
     /// @notice Check that the project has no contributors, therefore is editable
     modifier isEditable() {
@@ -49,19 +51,20 @@ contract Project is Ownable, AccessControl {
     event newProjectContributorsRegistered(address newProjectContributor);
 
     constructor(
-        IRacksProjectManager racksPM_,
-        uint256 colateralCost_,
-        uint256 reputationLevel_,
-        uint256 maxContributorsNumber_
+        IRacksProjectManager _racksPM,
+        uint256 _colateralCost,
+        uint256 _reputationLevel,
+        uint256 _maxContributorsNumber
     ) {
-        if (colateralCost_ <= 0 || reputationLevel_ <= 0 || maxContributorsNumber_ <= 0)
+        if (_colateralCost <= 0 || _reputationLevel <= 0 || _maxContributorsNumber <= 0)
             revert projectInvalidParameterErr();
-        racksPM = racksPM_;
-        colateralCost = colateralCost_;
-        reputationLevel = reputationLevel_;
-        maxContributorsNumber = maxContributorsNumber_;
+        racksPM = _racksPM;
+        colateralCost = _colateralCost;
+        reputationLevel = _reputationLevel;
+        maxContributorsNumber = _maxContributorsNumber;
         _setupRole(ADMIN_ROLE, msg.sender);
-        _setupRole(ADMIN_ROLE, racksPM_.getRacksPMOwner());
+        _setupRole(ADMIN_ROLE, _racksPM.getRacksPMOwner());
+        racksPM_ERC20 = _racksPM.getERC20Interface();
     }
 
     ////////////////////////
@@ -87,8 +90,9 @@ contract Project is Ownable, AccessControl {
         projectContributors.push(newProjectContributor);
         walletIsProjectContributor[msg.sender] = true;
         emit newProjectContributorsRegistered(msg.sender);
-        if (!racksPM.getERC20Interface().transferFrom(msg.sender, address(this), colateralCost))
-            revert erc20TransferFailed();
+
+        bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), colateralCost);
+        if (!success) revert erc20TransferFailed();
     }
 
     /**
@@ -96,30 +100,37 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins when the project isn't completed
      * - The contributors and participationWeights array must have the same size of the project contributors list.
      * - If there is a banned Contributor in the project, you have to pass his address and participation (should be 0) anyways.
+     * - The sum of @param _participationWeights can not be more than 100
      */
     function finishProject(
-        uint256 totalReputationPointsReward,
-        address[] memory contributors_,
-        uint256[] memory participationWeights_
+        uint256 _totalReputationPointsReward,
+        address[] memory _contributors,
+        uint256[] memory _participationWeights
     ) external onlyAdmin isNotFinished {
         if (
-            totalReputationPointsReward <= 0 ||
-            contributors_.length < projectContributors.length ||
-            participationWeights_.length < projectContributors.length
+            _totalReputationPointsReward <= 0 ||
+            _contributors.length != projectContributors.length ||
+            _participationWeights.length != projectContributors.length
         ) revert projectInvalidParameterErr();
 
         completed = true;
+        uint256 totalParticipationWeight = 0;
         unchecked {
-            for (uint256 i = 0; i < contributors_.length; i++) {
-                if (!walletIsProjectContributor[contributors_[i]]) revert contributorErr();
-                contributorToParticipationWeight[contributors_[i]] = participationWeights_[i];
+            for (uint256 i = 0; i < _contributors.length; i++) {
+                if (!walletIsProjectContributor[_contributors[i]]) revert contributorErr();
+
+                uint256 participationWeight = _participationWeights[i];
+
+                contributorToParticipationWeight[_contributors[i]] = participationWeight;
+                totalParticipationWeight += participationWeight;
             }
+            if (totalParticipationWeight > 100) revert projectInvalidParameterErr();
         }
         unchecked {
             for (uint256 i = 0; i < projectContributors.length; i++) {
                 if (!racksPM.isContributorBanned(projectContributors[i].wallet)) {
                     increaseContributorReputation(
-                        (totalReputationPointsReward *
+                        (_totalReputationPointsReward *
                             contributorToParticipationWeight[projectContributors[i].wallet]) / 100,
                         projectContributors[i]
                     );
@@ -127,16 +138,16 @@ contract Project is Ownable, AccessControl {
                         projectContributors[i].wallet,
                         projectContributors[i]
                     );
-                    if (
-                        !racksPM.getERC20Interface().transfer(
-                            projectContributors[i].wallet,
-                            colateralCost
-                        )
-                    ) revert erc20TransferFailed();
+
+                    bool success = racksPM_ERC20.transfer(
+                        projectContributors[i].wallet,
+                        colateralCost
+                    );
+                    if (!success) revert erc20TransferFailed();
                 }
             }
         }
-        if (racksPM.getERC20Interface().balanceOf(address(this)) > 0) withdrawFunds();
+        if (racksPM_ERC20.balanceOf(address(this)) > 0) withdrawFunds();
     }
 
     function giveAway() external onlyAdmin {
@@ -167,13 +178,10 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins when completing the project
      */
     function withdrawFunds() private onlyAdmin {
-        if (racksPM.getERC20Interface().balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
-        if (
-            !racksPM.getERC20Interface().transfer(
-                owner(),
-                racksPM.getERC20Interface().balanceOf(address(this))
-            )
-        ) revert erc20TransferFailed();
+        if (racksPM_ERC20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
+
+        bool success = racksPM_ERC20.transfer(owner(), racksPM_ERC20.balanceOf(address(this)));
+        if (!success) revert erc20TransferFailed();
     }
 
     /**
@@ -188,8 +196,8 @@ contract Project is Ownable, AccessControl {
      * @notice Remove an account from the user role
      * @dev Only callable by the Admin
      */
-    function removeAdmin(address account) external virtual onlyOwner {
-        revokeRole(ADMIN_ROLE, account);
+    function removeAdmin(address _account) external virtual onlyOwner {
+        revokeRole(ADMIN_ROLE, _account);
     }
 
     /**
@@ -197,25 +205,25 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins internally
      */
     function increaseContributorReputation(
-        uint256 reputationPointsReward,
-        Contributor storage contributor
+        uint256 _reputationPointsReward,
+        Contributor storage _contributor
     ) private onlyAdmin {
         unchecked {
-            uint256 grossReputationPoints = contributor.reputationPoints + reputationPointsReward;
+            uint256 grossReputationPoints = _contributor.reputationPoints + _reputationPointsReward;
 
-            while (grossReputationPoints >= (contributor.reputationLevel * 100)) {
-                grossReputationPoints -= (contributor.reputationLevel * 100);
-                contributor.reputationLevel++;
+            while (grossReputationPoints >= (_contributor.reputationLevel * 100)) {
+                grossReputationPoints -= (_contributor.reputationLevel * 100);
+                _contributor.reputationLevel++;
             }
-            contributor.reputationPoints = grossReputationPoints;
+            _contributor.reputationPoints = grossReputationPoints;
         }
     }
 
     /**
      * @notice Provides information about supported interfaces (required by AccessControl)
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 _interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(_interfaceId);
     }
 
     ////////////////////////
@@ -226,37 +234,77 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setColateralCost(uint256 colateralCost_) external onlyAdmin isEditable {
-        colateralCost = colateralCost_;
+    function setColateralCost(uint256 _colateralCost) external onlyAdmin isEditable {
+        colateralCost = _colateralCost;
     }
 
     /**
      * @notice Edit the Reputation Level
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setReputationLevel(uint256 reputationLevel_) external onlyAdmin isEditable {
-        reputationLevel = reputationLevel_;
+    function setReputationLevel(uint256 _reputationLevel) external onlyAdmin isEditable {
+        reputationLevel = _reputationLevel;
     }
 
     /**
      * @notice Edit the Reputation Level
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setMaxContributorsNumber(uint256 maxContributorsNumber_)
+    function setMaxContributorsNumber(uint256 _maxContributorsNumber)
         external
         onlyAdmin
         isEditable
     {
-        maxContributorsNumber = maxContributorsNumber_;
+        maxContributorsNumber = _maxContributorsNumber;
     }
 
     ////////////////////////
     //  Getter Functions //
     //////////////////////
 
+    /// @notice Get the colateral cost to enter as contributor
+    function getColateralCost() external view returns (uint256) {
+        return colateralCost;
+    }
+
+    /// @notice Get the reputation level of the project
+    function getReputationLevel() external view returns (uint256) {
+        return reputationLevel;
+    }
+
+    /// @notice Get the maximum contributor that can be in the project
+    function getMaxContributors() external view returns (uint256) {
+        return maxContributorsNumber;
+    }
+
     /// @notice Get total number of contributors
     function getContributorsNumber() external view returns (uint256) {
         return projectContributors.length;
+    }
+
+    /// @notice Return true is the project is completed, otherwise return false
+    function isCompleted() external view returns (bool) {
+        return completed;
+    }
+
+    /// @notice Return the contributor in the corresponding index
+    function getProjectContributor(uint256 _index) external view returns (Contributor memory) {
+        require(_index < projectContributors.length, "Invalid index");
+        return projectContributors[_index];
+    }
+
+    /// @notice Return true if the address is a contributor in the project
+    function isInProjectContributor(address _contributor) external view returns (bool) {
+        return walletIsProjectContributor[_contributor];
+    }
+
+    /// @notice Get the participation weight in percent
+    function getContributorParticipationWeight(address _contributor)
+        external
+        view
+        returns (uint256)
+    {
+        return contributorToParticipationWeight[_contributor];
     }
 
     receive() external payable {}
