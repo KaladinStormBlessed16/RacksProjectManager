@@ -208,7 +208,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
                 uint256 callerReputationLv = accountToContributorData[msg.sender].reputationLevel;
                 uint256 j = 0;
                 for (uint256 i = 0; i < projects.length; i++) {
-                    if (projects[i].reputationLevel() <= callerReputationLv) {
+                    if (projects[i].getReputationLevel() <= callerReputationLv) {
                         filteredProjects[j] = projects[i];
                         j++;
                     }
@@ -218,7 +218,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
             unchecked {
                 uint256 j = 0;
                 for (uint256 i = 0; i < projects.length; i++) {
-                    if (projects[i].reputationLevel() == 1) {
+                    if (projects[i].getReputationLevel() == 1) {
                         filteredProjects[j] = projects[i];
                         j++;
                     }

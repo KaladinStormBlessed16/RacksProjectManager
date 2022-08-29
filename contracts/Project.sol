@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./IRacksProjectManager.sol";
 import "./Contributor.sol";
@@ -13,13 +14,14 @@ contract Project is Ownable, AccessControl {
 
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
-    uint256 public colateralCost;
-    uint256 public reputationLevel;
-    uint256 public maxContributorsNumber;
-    bool public completed;
-    Contributor[] public projectContributors;
-    mapping(address => bool) public walletIsProjectContributor;
-    mapping(address => uint256) public contributorToParticipationWeight;
+    uint256 private colateralCost;
+    uint256 private reputationLevel;
+    uint256 private maxContributorsNumber;
+    bool private completed;
+    Contributor[] private projectContributors;
+    mapping(address => bool) private walletIsProjectContributor;
+    mapping(address => uint256) private contributorToParticipationWeight;
+    IERC20 private immutable racksPM_ERC20;
 
     /// @notice Check that the project has no contributors, therefore is editable
     modifier isEditable() {
@@ -62,6 +64,7 @@ contract Project is Ownable, AccessControl {
         maxContributorsNumber = _maxContributorsNumber;
         _setupRole(ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, _racksPM.getRacksPMOwner());
+        racksPM_ERC20 = _racksPM.getERC20Interface();
     }
 
     ////////////////////////
@@ -87,11 +90,8 @@ contract Project is Ownable, AccessControl {
         projectContributors.push(newProjectContributor);
         walletIsProjectContributor[msg.sender] = true;
         emit newProjectContributorsRegistered(msg.sender);
-        bool success = racksPM.getERC20Interface().transferFrom(
-            msg.sender,
-            address(this),
-            colateralCost
-        );
+
+        bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), colateralCost);
         if (!success) revert erc20TransferFailed();
     }
 
@@ -138,16 +138,16 @@ contract Project is Ownable, AccessControl {
                         projectContributors[i].wallet,
                         projectContributors[i]
                     );
-                    if (
-                        !racksPM.getERC20Interface().transfer(
-                            projectContributors[i].wallet,
-                            colateralCost
-                        )
-                    ) revert erc20TransferFailed();
+
+                    bool success = racksPM_ERC20.transfer(
+                        projectContributors[i].wallet,
+                        colateralCost
+                    );
+                    if (!success) revert erc20TransferFailed();
                 }
             }
         }
-        if (racksPM.getERC20Interface().balanceOf(address(this)) > 0) withdrawFunds();
+        if (racksPM_ERC20.balanceOf(address(this)) > 0) withdrawFunds();
     }
 
     function giveAway() external onlyAdmin {
@@ -178,13 +178,10 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins when completing the project
      */
     function withdrawFunds() private onlyAdmin {
-        if (racksPM.getERC20Interface().balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
-        if (
-            !racksPM.getERC20Interface().transfer(
-                owner(),
-                racksPM.getERC20Interface().balanceOf(address(this))
-            )
-        ) revert erc20TransferFailed();
+        if (racksPM_ERC20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
+
+        bool success = racksPM_ERC20.transfer(owner(), racksPM_ERC20.balanceOf(address(this)));
+        if (!success) revert erc20TransferFailed();
     }
 
     /**
