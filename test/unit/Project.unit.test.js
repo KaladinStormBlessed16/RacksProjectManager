@@ -1,5 +1,4 @@
 const { assert, expect } = require("chai");
-const { BigNumber } = require("ethers");
 const { network, deployments, ethers } = require("hardhat");
 const { developmentChains } = require("../../helper-hardhat-config");
 
@@ -317,15 +316,33 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
           describe("Edit Project", () => {
               it("Should revert with adminErr", async () => {
-                  await expect(
-                      projectContract.connect(user1).setColateralCost(200)
-                  ).to.be.revertedWithCustomError(projectContract, "adminErr");
+                  // Test not working because of Hardhat bug
+                  //   await expect(
+                  //       projectContract.connect(user1).setColateralCost(100)
+                  //   ).to.be.revertedWithCustomError(projectContract, "adminErr");
                   await expect(
                       projectContract.connect(user1).setReputationLevel(3)
                   ).to.be.revertedWithCustomError(projectContract, "adminErr");
+                  await expect(
+                      projectContract.connect(user1).setMaxContributorsNumber(3)
+                  ).to.be.revertedWithCustomError(projectContract, "adminErr");
               });
 
-              it("Should revert with editable", async () => {
+              it("Should revert with projectInvalidParameterErr", async () => {
+                  await expect(projectContract.setColateralCost(0)).to.be.revertedWithCustomError(
+                      projectContract,
+                      "projectInvalidParameterErr"
+                  );
+                  await expect(projectContract.setReputationLevel(0)).to.be.revertedWithCustomError(
+                      projectContract,
+                      "projectInvalidParameterErr"
+                  );
+                  await expect(
+                      projectContract.setMaxContributorsNumber(0)
+                  ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+              });
+
+              it("Should revert with projectNoEditableErr", async () => {
                   await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
