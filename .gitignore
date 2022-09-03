@@ -7,3 +7,7 @@ typechain
 #Hardhat files
 cache
 artifacts
+
+.vscode
+
+deployments/rinkeby
