@@ -36,6 +36,15 @@
         <li><a href="#completed-project">Completed project</a></li>
         <li><a href="#flow-diagram">Flow diagram</a></li>
       </ul>
+      <li><a href="#build-with">Build with</a></li>
+      <li><a href="#getting-started">Getting Started</a></li>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+      <li><a href="#usage">Usage</a></li>
+      <ul>
+        <li><a href="#run-tests">Run test</a></li>
+      </ul>
     </li>
   </ol>
 </details>
@@ -103,7 +112,7 @@ npm install
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-### Run tests _(hardhat network)_
+### Run tests
 
 ```sh
 npx hardhat test
