@@ -14,6 +14,7 @@ contract Project is Ownable, AccessControl {
 
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
+    string private name;
     uint256 private colateralCost;
     uint256 private reputationLevel;
     uint256 private maxContributorsNumber;
@@ -52,13 +53,19 @@ contract Project is Ownable, AccessControl {
 
     constructor(
         IRacksProjectManager _racksPM,
+        string memory _name,
         uint256 _colateralCost,
         uint256 _reputationLevel,
         uint256 _maxContributorsNumber
     ) {
-        if (_colateralCost <= 0 || _reputationLevel <= 0 || _maxContributorsNumber <= 0)
-            revert projectInvalidParameterErr();
+        if (
+            _colateralCost <= 0 ||
+            _reputationLevel <= 0 ||
+            _maxContributorsNumber <= 0 ||
+            bytes(_name).length <= 0
+        ) revert projectInvalidParameterErr();
         racksPM = _racksPM;
+        name = _name;
         colateralCost = _colateralCost;
         reputationLevel = _reputationLevel;
         maxContributorsNumber = _maxContributorsNumber;
@@ -235,6 +242,15 @@ contract Project is Ownable, AccessControl {
     //////////////////////
 
     /**
+     * @notice Edit the Project Name
+     * @dev Only callable by Admins when the project has no Contributor yet.
+     */
+    function setName(string memory _name) external onlyAdmin isEditable {
+        if (bytes(_name).length <= 0) revert projectInvalidParameterErr();
+        name = _name;
+    }
+
+    /**
      * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
@@ -268,6 +284,11 @@ contract Project is Ownable, AccessControl {
     ////////////////////////
     //  Getter Functions //
     //////////////////////
+
+    /// @notice Get the project name
+    function getName() external view returns (string memory) {
+        return name;
+    }
 
     /// @notice Get the colateral cost to enter as contributor
     function getColateralCost() external view returns (uint256) {

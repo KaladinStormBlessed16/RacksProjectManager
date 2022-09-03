@@ -22,7 +22,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               let erc20Contract = await ethers.getContract("MockErc20");
               erc20 = await erc20Contract.connect(deployer);
 
-              await racksPM.createProject(100, 1, 2);
+              await racksPM.createProject("Project1", 100, 1, 2);
           });
 
           describe("Setup", () => {
@@ -48,20 +48,21 @@ const { developmentChains } = require("../../helper-hardhat-config");
           describe("Create Project", () => {
               it("Should revert with adminErr", async () => {
                   await expect(
-                      racksPM.connect(user1).createProject(100, 1, 2)
+                      racksPM.connect(user1).createProject("Project2", 100, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
               });
 
               it("Should revert with projectInvalidParameterErr", async () => {
-                  await expect(racksPM.createProject(0, 1, 2)).to.be.revertedWithCustomError(
-                      racksPM,
-                      "projectInvalidParameterErr"
-                  );
-                  await expect(racksPM.createProject(100, 0, 2)).to.be.revertedWithCustomError(
-                      racksPM,
-                      "projectInvalidParameterErr"
-                  );
-                  await expect(racksPM.createProject(100, 1, 0)).to.be.revertedWithCustomError(
+                  await expect(
+                      racksPM.createProject("Project2", 0, 1, 2)
+                  ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+                  await expect(
+                      racksPM.createProject("Project2", 100, 0, 2)
+                  ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+                  await expect(
+                      racksPM.createProject("Project2", 100, 1, 0)
+                  ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+                  await expect(racksPM.createProject("", 100, 1, 3)).to.be.revertedWithCustomError(
                       racksPM,
                       "projectInvalidParameterErr"
                   );
@@ -72,12 +73,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await racksPM.isAdmin(user1.address)).to.be.true;
                   expect(await racksPM.isAdmin(user2.address)).to.be.false;
 
-                  await racksPM.connect(user1).createProject(100, 1, 2);
+                  await racksPM.connect(user1).createProject("Project2", 100, 1, 2);
                   assert.lengthOf(await racksPM.getProjects(), 2);
 
                   await racksPM.removeAdmin(user1.address);
                   await expect(
-                      racksPM.connect(user1).createProject(100, 1, 2)
+                      racksPM.connect(user1).createProject("Project3", 100, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
               });
           });
@@ -114,8 +115,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retieve only Lv1 Projects called by a Holder", async () => {
-                  await racksPM.createProject(100, 1, 2);
-                  await racksPM.createProject(100, 3, 2);
+                  await racksPM.createProject("Project2", 100, 1, 2);
+                  await racksPM.createProject("Project3", 100, 3, 2);
 
                   await mrc.connect(user1).mint(1);
                   const projects = await racksPM.connect(user1).getProjects();
@@ -126,8 +127,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retrieve only Lv1 Projects called by a Contributor", async () => {
-                  await racksPM.createProject(100, 1, 2);
-                  await racksPM.createProject(100, 3, 2);
+                  await racksPM.createProject("Project2", 100, 1, 2);
+                  await racksPM.createProject("Project3", 100, 3, 2);
 
                   (await mrc.connect(user1).mint(1)).wait();
                   await racksPM.connect(user1).registerContributor();
@@ -139,8 +140,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retrieve all Projects called by an Admin", async () => {
-                  await racksPM.createProject(100, 1, 2);
-                  await racksPM.createProject(100, 3, 2);
+                  await racksPM.createProject("Project2", 100, 1, 2);
+                  await racksPM.createProject("Project3", 100, 3, 2);
 
                   const projects = await racksPM.getProjects();
                   assert.lengthOf(

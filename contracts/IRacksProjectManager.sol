@@ -12,7 +12,7 @@ import "./Err.sol";
 interface IRacksProjectManager {
     /// @notice Events
     event newContributorRegistered(address newContributor);
-    event newProjectCreated(address newProjectAddress);
+    event newProjectCreated(string name, address newProjectAddress);
 
     function isAdmin(address account) external view returns (bool);
 
