@@ -9,5 +9,4 @@ cache
 artifacts
 
 .vscode
-
-deployments/rinkeby
+deployments
