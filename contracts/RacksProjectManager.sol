@@ -69,15 +69,21 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @dev Only callable by Admins
      */
     function createProject(
+        string memory _name,
         uint256 _colateralCost,
         uint256 _reputationLevel,
         uint256 _maxContributorsNumber
     ) external onlyAdmin {
-        if (_colateralCost <= 0 || _reputationLevel <= 0 || _maxContributorsNumber <= 0)
-            revert projectInvalidParameterErr();
+        if (
+            _colateralCost <= 0 ||
+            _reputationLevel <= 0 ||
+            _maxContributorsNumber <= 0 ||
+            bytes(_name).length <= 0
+        ) revert projectInvalidParameterErr();
 
         Project newProject = new Project(
             this,
+            _name,
             _colateralCost,
             _reputationLevel,
             _maxContributorsNumber
@@ -85,7 +91,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
         projects.push(newProject);
         _setupRole(ADMIN_ROLE, address(newProject));
-        emit newProjectCreated(address(newProject));
+        emit newProjectCreated(_name, address(newProject));
     }
 
     /**
