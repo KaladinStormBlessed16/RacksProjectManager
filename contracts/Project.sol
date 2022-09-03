@@ -150,6 +150,10 @@ contract Project is Ownable, AccessControl {
         if (racksPM_ERC20.balanceOf(address(this)) > 0) withdrawFunds();
     }
 
+    /**
+     * @notice Give Away extra rewards
+     * @dev Only callable by Admins when the project is completed
+     */
     function giveAway() external onlyAdmin {
         if (!completed) revert notCompletedErr();
 
@@ -235,6 +239,7 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
     function setColateralCost(uint256 _colateralCost) external onlyAdmin isEditable {
+        if (_colateralCost <= 0) revert projectInvalidParameterErr();
         colateralCost = _colateralCost;
     }
 
@@ -243,6 +248,7 @@ contract Project is Ownable, AccessControl {
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
     function setReputationLevel(uint256 _reputationLevel) external onlyAdmin isEditable {
+        if (_reputationLevel <= 0) revert projectInvalidParameterErr();
         reputationLevel = _reputationLevel;
     }
 
@@ -255,6 +261,7 @@ contract Project is Ownable, AccessControl {
         onlyAdmin
         isEditable
     {
+        if (_maxContributorsNumber <= 0) revert projectInvalidParameterErr();
         maxContributorsNumber = _maxContributorsNumber;
     }
 
@@ -289,7 +296,7 @@ contract Project is Ownable, AccessControl {
 
     /// @notice Return the contributor in the corresponding index
     function getProjectContributor(uint256 _index) external view returns (Contributor memory) {
-        require(_index < projectContributors.length, "Invalid index");
+        if (_index >= projectContributors.length || _index < 0) revert projectInvalidParameterErr();
         return projectContributors[_index];
     }
 
