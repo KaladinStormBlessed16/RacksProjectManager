@@ -257,7 +257,7 @@ contract Project is Ownable, AccessControl {
         return super.supportsInterface(_interfaceId);
     }
 
-    function deleteProject() public onlyAdmin isNotDeleted {
+    function deleteProject() public onlyAdmin isNotDeleted isEditable{
         isDeleted = true;
     }
 
