@@ -120,6 +120,17 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       projectContract.connect(user1).registerProjectContributor()
                   ).to.be.revertedWithCustomError(racksPM, "pausedErr");
               });
+              it("Should revert if the project is deleted", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+
+                  await projectContract.deleteProject();
+
+                  await expect(
+                      projectContract.connect(user1).registerProjectContributor()
+                  ).to.be.revertedWithCustomError(projectContract, "deletedErr");
+              });
           });
 
           describe("Finish Project", () => {
@@ -334,11 +345,18 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await erc20.connect(user2).approve(projectContract.address, 100);
                   await projectContract.connect(user2).registerProjectContributor();
 
-                  await await racksPM.setIsPaused(true);
+                  await racksPM.setIsPaused(true);
 
                   await expect(
                       projectContract.finishProject(500, [user2.address, user1.address], [70, 30])
                   ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+
+                  await racksPM.setIsPaused(false);
+
+                  await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
+                      projectContract,
+                      "projectNoEditableErr"
+                  );
               });
           });
 
@@ -361,6 +379,26 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       projectContract.setMaxContributorsNumber(3)
                   ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+              });
+
+              it("Should revert with deletedErr", async () => {
+                  await await projectContract.deleteProject();
+                  await expect(projectContract.setColateralCost(100)).to.be.revertedWithCustomError(
+                      projectContract,
+                      "deletedErr"
+                  );
+
+                  await expect(
+                      projectContract.setName("Project Updated")
+                  ).to.be.revertedWithCustomError(projectContract, "deletedErr");
+
+                  await expect(projectContract.setReputationLevel(3)).to.be.revertedWithCustomError(
+                      projectContract,
+                      "deletedErr"
+                  );
+                  await expect(
+                      projectContract.setMaxContributorsNumber(3)
+                  ).to.be.revertedWithCustomError(projectContract, "deletedErr");
               });
               it("Should revert with adminErr", async () => {
                   // Test not working because of Hardhat bug
@@ -416,6 +454,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       projectContract.setMaxContributorsNumber(0)
                   ).to.be.revertedWithCustomError(projectContract, "projectNoEditableErr");
+
+                  await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
+                      projectContract,
+                      "projectNoEditableErr"
+                  );
               });
 
               it("Should edit Project with new Colateral Cost, Reputation Level and Max Contributors Number", async () => {
