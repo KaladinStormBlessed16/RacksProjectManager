@@ -48,6 +48,12 @@ contract Project is Ownable, AccessControl {
         _;
     }
 
+    /// @notice Check that the smart contract is paused
+    modifier isNotPaused() {
+        if (racksPM.getIsPaused()) revert pausedErr();
+        _;
+    }
+
     /// @notice Events
     event newProjectContributorsRegistered(address newProjectContributor);
 
@@ -82,7 +88,7 @@ contract Project is Ownable, AccessControl {
      * @notice Add Project Contributor
      * @dev Only callable by Holders who are already Contributors
      */
-    function registerProjectContributor() external onlyContributor isNotFinished {
+    function registerProjectContributor() external onlyContributor isNotFinished isNotPaused {
         if (walletIsProjectContributor[msg.sender]) revert projectContributorAlreadyExistsErr();
         if (projectContributors.length == maxContributorsNumber)
             revert maxContributorsNumberExceededErr();
@@ -113,7 +119,7 @@ contract Project is Ownable, AccessControl {
         uint256 _totalReputationPointsReward,
         address[] memory _contributors,
         uint256[] memory _participationWeights
-    ) external onlyAdmin isNotFinished {
+    ) external onlyAdmin isNotFinished isNotPaused {
         if (
             _totalReputationPointsReward <= 0 ||
             _contributors.length != projectContributors.length ||
@@ -161,7 +167,7 @@ contract Project is Ownable, AccessControl {
      * @notice Give Away extra rewards
      * @dev Only callable by Admins when the project is completed
      */
-    function giveAway() external onlyAdmin {
+    function giveAway() external onlyAdmin isNotPaused {
         if (!completed) revert notCompletedErr();
 
         if (address(this).balance <= 0) revert noFundsGiveAwayErr();

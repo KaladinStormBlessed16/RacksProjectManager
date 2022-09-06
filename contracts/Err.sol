@@ -17,3 +17,4 @@ error noFundsWithdrawErr();
 error noFundsGiveAwayErr();
 error notCompletedErr();
 error projectContributorHasNoReputationEnoughErr();
+error pausedErr();
