@@ -109,6 +109,28 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   const projectContributor = await projectContract.getProjectContributor(0);
                   assert(projectContributor.wallet === user1.address);
               });
+              it("Should revert if the smart contract is paused", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+
+                  await racksPM.setIsPaused(true);
+
+                  await expect(
+                      projectContract.connect(user1).registerProjectContributor()
+                  ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+              });
+              it("Should revert if the project is deleted", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+
+                  await projectContract.deleteProject();
+
+                  await expect(
+                      projectContract.connect(user1).registerProjectContributor()
+                  ).to.be.revertedWithCustomError(projectContract, "deletedErr");
+              });
           });
 
           describe("Finish Project", () => {
@@ -312,14 +334,77 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await racksPM.withdrawAllFunds(deployer.address);
                   expect(await erc20.balanceOf(deployer.address)).to.be.equal(100000000100);
               });
+              it("Should revert if the smart contract is paused", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+
+                  await mrc.connect(user2).mint(1);
+                  await racksPM.connect(user2).registerContributor();
+                  await erc20.connect(user2).approve(projectContract.address, 100);
+                  await projectContract.connect(user2).registerProjectContributor();
+
+                  await racksPM.setIsPaused(true);
+
+                  await expect(
+                      projectContract.finishProject(500, [user2.address, user1.address], [70, 30])
+                  ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+
+                  await racksPM.setIsPaused(false);
+
+                  await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
+                      projectContract,
+                      "projectNoEditableErr"
+                  );
+              });
           });
 
           describe("Edit Project", () => {
+              it("Should revert with pausedErr", async () => {
+                  await await racksPM.setIsPaused(true);
+                  await expect(projectContract.setColateralCost(100)).to.be.revertedWithCustomError(
+                      racksPM,
+                      "pausedErr"
+                  );
+
+                  await expect(
+                      projectContract.setName("Project Updated")
+                  ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+
+                  await expect(projectContract.setReputationLevel(3)).to.be.revertedWithCustomError(
+                      racksPM,
+                      "pausedErr"
+                  );
+                  await expect(
+                      projectContract.setMaxContributorsNumber(3)
+                  ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+              });
+
+              it("Should revert with deletedErr", async () => {
+                  await await projectContract.deleteProject();
+                  await expect(projectContract.setColateralCost(100)).to.be.revertedWithCustomError(
+                      projectContract,
+                      "deletedErr"
+                  );
+
+                  await expect(
+                      projectContract.setName("Project Updated")
+                  ).to.be.revertedWithCustomError(projectContract, "deletedErr");
+
+                  await expect(projectContract.setReputationLevel(3)).to.be.revertedWithCustomError(
+                      projectContract,
+                      "deletedErr"
+                  );
+                  await expect(
+                      projectContract.setMaxContributorsNumber(3)
+                  ).to.be.revertedWithCustomError(projectContract, "deletedErr");
+              });
               it("Should revert with adminErr", async () => {
                   // Test not working because of Hardhat bug
-                  //   await expect(
-                  //       projectContract.connect(user1).setColateralCost(100)
-                  //   ).to.be.revertedWithCustomError(projectContract, "adminErr");
+                  // await expect(
+                  //     projectContract.connect(user1).setColateralCost(100)
+                  // ).to.be.revertedWithCustomError(projectContract, "adminErr");
                   await expect(
                       projectContract.connect(user1).setName("Project Updated")
                   ).to.be.revertedWithCustomError(projectContract, "adminErr");
@@ -369,6 +454,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       projectContract.setMaxContributorsNumber(0)
                   ).to.be.revertedWithCustomError(projectContract, "projectNoEditableErr");
+
+                  await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
+                      projectContract,
+                      "projectNoEditableErr"
+                  );
               });
 
               it("Should edit Project with new Colateral Cost, Reputation Level and Max Contributors Number", async () => {
@@ -404,6 +494,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       projectContract.connect(user1).giveAway()
                   ).to.be.revertedWithCustomError(projectContract, "adminErr");
+              });
+
+              it("Should revert with pausedErr", async () => {
+                  racksPM.setIsPaused(true);
+                  await expect(projectContract.giveAway()).to.be.revertedWithCustomError(
+                      racksPM,
+                      "pausedErr"
+                  );
               });
 
               it("Should revert with notCompletedErr", async () => {
