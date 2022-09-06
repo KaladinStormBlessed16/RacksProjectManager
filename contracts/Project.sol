@@ -251,7 +251,7 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Project Name
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setName(string memory _name) external onlyAdmin isEditable {
+    function setName(string memory _name) external onlyAdmin isEditable isNotPaused {
         if (bytes(_name).length <= 0) revert projectInvalidParameterErr();
         name = _name;
     }
@@ -260,7 +260,7 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setColateralCost(uint256 _colateralCost) external onlyAdmin isEditable {
+    function setColateralCost(uint256 _colateralCost) external onlyAdmin isEditable isNotPaused {
         if (_colateralCost <= 0) revert projectInvalidParameterErr();
         colateralCost = _colateralCost;
     }
@@ -269,7 +269,12 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Reputation Level
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setReputationLevel(uint256 _reputationLevel) external onlyAdmin isEditable {
+    function setReputationLevel(uint256 _reputationLevel)
+        external
+        onlyAdmin
+        isEditable
+        isNotPaused
+    {
         if (_reputationLevel <= 0) revert projectInvalidParameterErr();
         reputationLevel = _reputationLevel;
     }
@@ -282,6 +287,7 @@ contract Project is Ownable, AccessControl {
         external
         onlyAdmin
         isEditable
+        isNotPaused
     {
         if (_maxContributorsNumber <= 0) revert projectInvalidParameterErr();
         maxContributorsNumber = _maxContributorsNumber;
