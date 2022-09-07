@@ -19,6 +19,7 @@ contract Project is Ownable, AccessControl {
     uint256 private reputationLevel;
     uint256 private maxContributorsNumber;
     bool private completed;
+    bool private isDeleted;
     Contributor[] private projectContributors;
     mapping(address => bool) private walletIsProjectContributor;
     mapping(address => uint256) private contributorToParticipationWeight;
@@ -48,6 +49,18 @@ contract Project is Ownable, AccessControl {
         _;
     }
 
+    /// @notice Check that the smart contract is paused
+    modifier isNotPaused() {
+        if (racksPM.getIsPaused()) revert pausedErr();
+        _;
+    }
+
+    /// @notice Check that the smart contract is paused
+    modifier isNotDeleted() {
+        if (isDeleted) revert deletedErr();
+        _;
+    }
+
     /// @notice Events
     event newProjectContributorsRegistered(address newProjectContributor);
 
@@ -72,6 +85,7 @@ contract Project is Ownable, AccessControl {
         _setupRole(ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, _racksPM.getRacksPMOwner());
         racksPM_ERC20 = _racksPM.getERC20Interface();
+        isDeleted = false;
     }
 
     ////////////////////////
@@ -82,7 +96,13 @@ contract Project is Ownable, AccessControl {
      * @notice Add Project Contributor
      * @dev Only callable by Holders who are already Contributors
      */
-    function registerProjectContributor() external onlyContributor isNotFinished {
+    function registerProjectContributor()
+        external
+        onlyContributor
+        isNotFinished
+        isNotPaused
+        isNotDeleted
+    {
         if (walletIsProjectContributor[msg.sender]) revert projectContributorAlreadyExistsErr();
         if (projectContributors.length == maxContributorsNumber)
             revert maxContributorsNumberExceededErr();
@@ -113,7 +133,7 @@ contract Project is Ownable, AccessControl {
         uint256 _totalReputationPointsReward,
         address[] memory _contributors,
         uint256[] memory _participationWeights
-    ) external onlyAdmin isNotFinished {
+    ) external onlyAdmin isNotFinished isNotPaused isNotDeleted {
         if (
             _totalReputationPointsReward <= 0 ||
             _contributors.length != projectContributors.length ||
@@ -161,7 +181,7 @@ contract Project is Ownable, AccessControl {
      * @notice Give Away extra rewards
      * @dev Only callable by Admins when the project is completed
      */
-    function giveAway() external onlyAdmin {
+    function giveAway() external onlyAdmin isNotPaused isNotDeleted {
         if (!completed) revert notCompletedErr();
 
         if (address(this).balance <= 0) revert noFundsGiveAwayErr();
@@ -199,7 +219,7 @@ contract Project is Ownable, AccessControl {
      * @notice Set new Admin
      * @dev Only callable by the Admin
      */
-    function addAdmin(address _newAdmin) external onlyOwner {
+    function addAdmin(address _newAdmin) external onlyOwner isNotDeleted {
         grantRole(ADMIN_ROLE, _newAdmin);
     }
 
@@ -207,7 +227,7 @@ contract Project is Ownable, AccessControl {
      * @notice Remove an account from the user role
      * @dev Only callable by the Admin
      */
-    function removeAdmin(address _account) external virtual onlyOwner {
+    function removeAdmin(address _account) external virtual onlyOwner isNotDeleted {
         revokeRole(ADMIN_ROLE, _account);
     }
 
@@ -218,7 +238,7 @@ contract Project is Ownable, AccessControl {
     function increaseContributorReputation(
         uint256 _reputationPointsReward,
         Contributor storage _contributor
-    ) private onlyAdmin {
+    ) private onlyAdmin isNotDeleted {
         unchecked {
             uint256 grossReputationPoints = _contributor.reputationPoints + _reputationPointsReward;
 
@@ -237,6 +257,10 @@ contract Project is Ownable, AccessControl {
         return super.supportsInterface(_interfaceId);
     }
 
+    function deleteProject() public onlyAdmin isNotDeleted isEditable{
+        isDeleted = true;
+    }
+
     ////////////////////////
     //  Setter Functions //
     //////////////////////
@@ -245,7 +269,7 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Project Name
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setName(string memory _name) external onlyAdmin isEditable {
+    function setName(string memory _name) external onlyAdmin isEditable isNotPaused isNotDeleted {
         if (bytes(_name).length <= 0) revert projectInvalidParameterErr();
         name = _name;
     }
@@ -254,7 +278,13 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setColateralCost(uint256 _colateralCost) external onlyAdmin isEditable {
+    function setColateralCost(uint256 _colateralCost)
+        external
+        onlyAdmin
+        isEditable
+        isNotPaused
+        isNotDeleted
+    {
         if (_colateralCost <= 0) revert projectInvalidParameterErr();
         colateralCost = _colateralCost;
     }
@@ -263,7 +293,13 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Reputation Level
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setReputationLevel(uint256 _reputationLevel) external onlyAdmin isEditable {
+    function setReputationLevel(uint256 _reputationLevel)
+        external
+        onlyAdmin
+        isEditable
+        isNotPaused
+        isNotDeleted
+    {
         if (_reputationLevel <= 0) revert projectInvalidParameterErr();
         reputationLevel = _reputationLevel;
     }
@@ -276,6 +312,8 @@ contract Project is Ownable, AccessControl {
         external
         onlyAdmin
         isEditable
+        isNotPaused
+        isNotDeleted
     {
         if (_maxContributorsNumber <= 0) revert projectInvalidParameterErr();
         maxContributorsNumber = _maxContributorsNumber;
@@ -333,6 +371,10 @@ contract Project is Ownable, AccessControl {
         returns (uint256)
     {
         return contributorToParticipationWeight[_contributor];
+    }
+
+    function getIsDeleted() external view returns (bool) {
+        return isDeleted;
     }
 
     receive() external payable {}

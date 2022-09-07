@@ -32,6 +32,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     bytes32 private constant ADMIN_ROLE = 0x00;
     Project[] private projects;
     address[] private contributors;
+    bool private isPaused;
     mapping(address => bool) private walletIsContributor;
     mapping(address => bool) private accountIsBanned;
     mapping(address => Contributor) private accountToContributorData;
@@ -54,15 +55,24 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         _;
     }
 
+    /// @notice Check that the smart contract is paused
+    modifier isNotPaused() {
+        if (isPaused) revert pausedErr();
+        _;
+    }
+
+    ///////////////////
+    //  Constructor  //
+    ///////////////////
     constructor(IMRC _mrc, IERC20 _erc20) {
         erc20 = _erc20;
         mrc = _mrc;
         _setupRole(ADMIN_ROLE, msg.sender);
     }
 
-    ////////////////////////
+    ///////////////////////
     //  Logic Functions  //
-    //////////////////////
+    ///////////////////////
 
     /**
      * @notice Create Project
@@ -73,7 +83,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         uint256 _colateralCost,
         uint256 _reputationLevel,
         uint256 _maxContributorsNumber
-    ) external onlyAdmin {
+    ) external onlyAdmin isNotPaused {
         if (
             _colateralCost <= 0 ||
             _reputationLevel <= 0 ||
@@ -98,7 +108,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Add Contributor
      * @dev Only callable by Holders who are not already Contributors
      */
-    function registerContributor() external onlyHolder {
+    function registerContributor() external onlyHolder isNotPaused {
         if (walletIsContributor[msg.sender]) revert contributorAlreadyExistsErr();
 
         contributors.push(msg.sender);
@@ -111,14 +121,14 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Used to withdraw All funds
      * @dev Only owner is able to call this function
      */
-    function withdrawAllFunds(address _wallet) external onlyOwner {
+    function withdrawAllFunds(address _wallet) external onlyOwner isNotPaused {
         if (erc20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
         if (!erc20.transfer(_wallet, erc20.balanceOf(address(this)))) revert erc20TransferFailed();
     }
 
     ////////////////////////
     //  Helper Functions  //
-    //////////////////////
+    ////////////////////////
 
     /**
      * @notice Set new Admin
@@ -136,9 +146,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         revokeRole(ADMIN_ROLE, _account);
     }
 
-    ////////////////////////
+    ///////////////////////
     //  Setter Functions //
-    //////////////////////
+    ///////////////////////
 
     /**
      * @notice Set new ERC20 Token
@@ -166,6 +176,10 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         onlyAdmin
     {
         accountToContributorData[_account] = _newData;
+    }
+
+    function setIsPaused(bool _newPausedValue) public onlyAdmin {
+        isPaused = _newPausedValue;
     }
 
     ////////////////////////
@@ -268,5 +282,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      */
     function getContributorsNumber() external view onlyHolder returns (uint256) {
         return contributors.length;
+    }
+
+    function getIsPaused() external view override returns (bool) {
+        return isPaused;
     }
 }

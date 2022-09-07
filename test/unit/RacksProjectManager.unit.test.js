@@ -81,6 +81,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       racksPM.connect(user1).createProject("Project3", 100, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
               });
+
+              it("Should revert if the smart contract is paused", async () => {
+                  await racksPM.setIsPaused(true);
+
+                  await racksPM.addAdmin(user1.address);
+                  await expect(
+                      racksPM.connect(user1).createProject("Project2", 100, 1, 2)
+                  ).to.be.revertedWithCustomError(racksPM, "pausedErr");
+              });
           });
 
           describe("Register Contributor", () => {
@@ -103,6 +112,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await racksPM.connect(user1).registerContributor();
                   let contributor = await racksPM.connect(user1).getContributor(0);
                   assert(contributor.wallet == user1.address);
+              });
+
+              it("Should revert if the smart contract is paused", async () => {
+                  await racksPM.setIsPaused(true);
+
+                  await mrc.connect(user1).mint(1);
+                  await expect(
+                      racksPM.connect(user1).registerContributor()
+                  ).to.be.revertedWithCustomError(racksPM, "pausedErr");
               });
           });
 
