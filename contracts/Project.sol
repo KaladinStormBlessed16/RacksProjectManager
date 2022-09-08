@@ -49,13 +49,13 @@ contract Project is Ownable, AccessControl {
         _;
     }
 
-    /// @notice Check that the smart contract is paused
+    /// @notice Check that the smart contract is not Paused
     modifier isNotPaused() {
         if (racksPM.getIsPaused()) revert pausedErr();
         _;
     }
 
-    /// @notice Check that the smart contract is paused
+    /// @notice Check that the smart contract is not Deleted
     modifier isNotDeleted() {
         if (isDeleted) revert deletedErr();
         _;
@@ -257,7 +257,7 @@ contract Project is Ownable, AccessControl {
         return super.supportsInterface(_interfaceId);
     }
 
-    function deleteProject() public onlyAdmin isNotDeleted isEditable{
+    function deleteProject() public onlyAdmin isNotDeleted isEditable {
         isDeleted = true;
     }
 
