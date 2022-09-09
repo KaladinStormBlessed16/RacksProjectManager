@@ -62,7 +62,7 @@ contract Project is Ownable, AccessControl {
     }
 
     /// @notice Events
-    event newProjectContributorsRegistered(address newProjectContributor);
+    event newProjectContributorsRegistered(address projectAddress, address newProjectContributor);
 
     constructor(
         IRacksProjectManager _racksPM,
@@ -116,7 +116,7 @@ contract Project is Ownable, AccessControl {
 
         projectContributors.push(newProjectContributor);
         walletIsProjectContributor[msg.sender] = true;
-        emit newProjectContributorsRegistered(msg.sender);
+        emit newProjectContributorsRegistered(address(this), msg.sender);
 
         bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), colateralCost);
         if (!success) revert erc20TransferFailed();
@@ -373,6 +373,7 @@ contract Project is Ownable, AccessControl {
         return contributorToParticipationWeight[_contributor];
     }
 
+    /// @notice Returns whether the project is deleted or not
     function getIsDeleted() external view returns (bool) {
         return isDeleted;
     }

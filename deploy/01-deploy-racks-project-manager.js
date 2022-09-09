@@ -25,11 +25,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         from: deployer,
         args: arguments,
         log: true,
-        waitConfirmations: VERIFICATION_BLOCK_CONFIRMATIONS,
+        waitConfirmations: waitBlockConfirmations,
     });
 
     // Verify the deployment
-    if (process.env.ETHERSCAN_API_KEY) {
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         log("Verifying...");
         await verify(racksProjectManager.address, arguments);
     }
