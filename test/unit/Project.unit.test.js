@@ -88,7 +88,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
               it("Should revert if Contributor has no Reputation Level Enough with projectContributorHasNoReputationEnoughErr", async () => {
                   await racksPM.createProject("Project2", 100, 2, 3);
-                  const projectAddress2 = (await racksPM.getProjects())[1];
+                  const projects = await racksPM.getProjects();
+                  const projectAddress2 = projects[0];
 
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
@@ -282,7 +283,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   );
 
                   await racksPM.createProject("Project2", 100, 1, 3);
-                  const projectAddress2 = (await racksPM.getProjects())[1];
+                  const projectAddress2 = (await racksPM.getProjects())[0];
 
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);

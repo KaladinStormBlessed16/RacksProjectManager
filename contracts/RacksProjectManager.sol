@@ -9,6 +9,10 @@ import "./Project.sol";
 import "./Contributor.sol";
 import "./IMRC.sol";
 import "./Err.sol";
+import "./StructuredLinkedList.sol";
+
+// for debug
+import "hardhat/console.sol";
 
 //              ▟██████████   █████    ▟███████████   █████████████
 //            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
@@ -30,11 +34,18 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
-    Project[] private projects;
     address[] private contributors;
     bool private isPaused;
+    uint256 progressiveId;
+
+    using StructuredLinkedList for StructuredLinkedList.List;
+    StructuredLinkedList.List private projectsList;
+    mapping(uint256 => Project) private projectStore;
+    Project[] private projectsDeleted;
+
     mapping(address => bool) private walletIsContributor;
     mapping(address => bool) private accountIsBanned;
+    mapping(address => uint256) private projectId;
     mapping(address => Contributor) private accountToContributorData;
 
     /// @notice Check that user is Admin
@@ -99,7 +110,11 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
             _maxContributorsNumber
         );
 
-        projects.push(newProject);
+        progressiveId++;
+        projectStore[progressiveId] = newProject;
+        projectId[address(newProject)] = progressiveId;
+        projectsList.pushFront(progressiveId);
+
         _setupRole(ADMIN_ROLE, address(newProject));
         emit newProjectCreated(_name, address(newProject));
     }
@@ -166,12 +181,16 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         accountIsBanned[_account] = _state;
 
         if (_state == true) {
-            for (uint256 i = 0; i < projects.length; i++) {
-                Project project = projects[i];
+            (bool existNext, uint256 i) = projectsList.getNextNode(0);
+
+            while (i != 0 && existNext) {
+                Project project = projectStore[i];
 
                 if (project.getIsActive() && project.isContributorInProject(_account)) {
                     project.removeContributor(_account, false);
                 }
+
+                (existNext, i) = projectsList.getNextNode(i);
             }
         }
     }
@@ -229,25 +248,48 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @dev Only callable by Holders
      */
     function getProjects() public view onlyHolder returns (Project[] memory) {
-        // return projects;
-        Project[] memory filteredProjects = new Project[](projects.length);
-        if (hasRole(ADMIN_ROLE, msg.sender)) return projects;
-
-        uint256 callerReputationLv = walletIsContributor[msg.sender]
-            ? accountToContributorData[msg.sender].reputationLevel
-            : 1;
+        if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProject();
+        Project[] memory filteredProjects = new Project[](projectsList.sizeOf());
 
         unchecked {
+            uint256 callerReputationLv = walletIsContributor[msg.sender]
+                ? accountToContributorData[msg.sender].reputationLevel
+                : 1;
             uint256 j = 0;
-            for (uint256 i = 0; i < projects.length; i++) {
-                if (projects[i].getReputationLevel() <= callerReputationLv) {
-                    filteredProjects[j] = projects[i];
+            (bool existNext, uint256 i) = projectsList.getNextNode(0);
+
+            while (i != 0 && existNext) {
+                if (projectStore[i].getReputationLevel() <= callerReputationLv) {
+                    filteredProjects[j] = projectStore[i];
                     j++;
                 }
+                (existNext, i) = projectsList.getNextNode(i);
             }
         }
 
         return filteredProjects;
+    }
+
+    function getAllProject() public view returns (Project[] memory) {
+        Project[] memory allProjects = new Project[](progressiveId);
+
+        uint256 j = 0;
+        (bool existNext, uint256 i) = projectsList.getNextNode(0);
+
+        while (i != 0 && existNext) {
+            allProjects[j] = projectStore[i];
+            j++;
+            (existNext, i) = projectsList.getNextNode(i);
+        }
+
+        for (i = 0; i < projectsDeleted.length; i++) {
+            allProjects[j] = projectsDeleted[i];
+        }
+        return allProjects;
+    }
+
+    function getProjectsDeleted() public view returns (Project[] memory) {
+        return projectsDeleted;
     }
 
     /// @notice Get Contributor by index
@@ -275,7 +317,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @dev Only callable by Holders
      */
     function getProjectsNumber() external view onlyHolder returns (uint256) {
-        return projects.length;
+        return projectsList.sizeOf();
     }
 
     /**
@@ -288,5 +330,14 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     function getIsPaused() external view override returns (bool) {
         return isPaused;
+    }
+
+    function deleteProject() external override {
+        console.log(msg.sender);
+        uint256 id = projectId[msg.sender];
+
+        projectId[msg.sender] = 0;
+
+        projectsList.remove(id);
     }
 }

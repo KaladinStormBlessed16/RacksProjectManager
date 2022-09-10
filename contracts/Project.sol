@@ -28,9 +28,10 @@ contract Project is Ownable, AccessControl {
 
     /// @notice projectContributors
     using StructuredLinkedList for StructuredLinkedList.List;
+    StructuredLinkedList.List private contributorList;
+
     uint256 private progressiveId = 0;
     mapping(uint256 => Contributor) private projectContributors;
-    StructuredLinkedList.List private contributorList;
     mapping(address => uint256) private contributorId;
     mapping(address => uint256) private participationOfContributors;
 
@@ -281,6 +282,8 @@ contract Project is Ownable, AccessControl {
 
     function deleteProject() public onlyAdmin isNotDeleted isEditable {
         projectState = DELETED;
+
+        racksPM.deleteProject();
     }
 
     function removeContributor(address _contributor, bool _returnColateral)
