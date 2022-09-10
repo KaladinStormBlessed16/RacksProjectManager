@@ -165,7 +165,7 @@ contract Project is Ownable, AccessControl {
         uint256 totalParticipationWeight = 0;
         unchecked {
             for (uint256 i = 0; i < _contributors.length; i++) {
-                if (!isContributorInProject(msg.sender)) revert contributorErr();
+                if (!isContributorInProject(_contributors[i])) revert contributorErr();
 
                 uint256 participationWeight = _participationWeights[i];
 
