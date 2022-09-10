@@ -164,6 +164,16 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      */
     function setContributorStateToBanList(address _account, bool _state) external onlyAdmin {
         accountIsBanned[_account] = _state;
+
+        if (_state == true) {
+            for (uint256 i = 0; i < projects.length; i++) {
+                Project project = projects[i];
+
+                if (project.getIsActive() && project.isContributorInProject(_account)) {
+                    project.removeContributor(_account, false);
+                }
+            }
+        }
     }
 
     /**

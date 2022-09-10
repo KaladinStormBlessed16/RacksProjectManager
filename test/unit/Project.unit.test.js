@@ -300,8 +300,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   await project2Contract.finishProject(
                       500,
-                      [user2.address, user1.address, user3.address],
-                      [65, 35, 0]
+                      [user2.address, user1.address /*, user3.address*/],
+                      [65, 35 /*, 0*/]
                   );
 
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(9999999900);
