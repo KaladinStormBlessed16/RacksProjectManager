@@ -11,9 +11,6 @@ import "./IMRC.sol";
 import "./Err.sol";
 import "./StructuredLinkedList.sol";
 
-// for debug
-import "hardhat/console.sol";
-
 //              ▟██████████   █████    ▟███████████   █████████████
 //            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
 //           ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
@@ -282,9 +279,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
             (existNext, i) = projectsList.getNextNode(i);
         }
 
-        for (i = 0; i < projectsDeleted.length; i++) {
-            allProjects[j] = projectsDeleted[i];
-        }
         return allProjects;
     }
 
@@ -333,7 +327,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     }
 
     function deleteProject() external override {
-        console.log(msg.sender);
         uint256 id = projectId[msg.sender];
 
         projectId[msg.sender] = 0;
