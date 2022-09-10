@@ -35,7 +35,6 @@ contract Project is Ownable, AccessControl {
     Contributor[] private projectContributors;
     StructuredLinkedList.List private contributorList;
     mapping(address => uint256) private contributorId;
-    mapping(address => bool) private walletIsProjectContributor;
     mapping(address => uint256) private participationOfContributors;
 
     /// @notice State variables
@@ -123,7 +122,7 @@ contract Project is Ownable, AccessControl {
         isNotPaused
         isNotDeleted
     {
-        if (walletIsProjectContributor[msg.sender]) revert projectContributorAlreadyExistsErr();
+        if (isContributorInProject(msg.sender)) revert projectContributorAlreadyExistsErr();
         if (projectContributors.length == maxContributorsNumber)
             revert maxContributorsNumberExceededErr();
 
@@ -135,7 +134,6 @@ contract Project is Ownable, AccessControl {
 
         progressiveId++;
         projectContributors.push(contributor);
-        walletIsProjectContributor[msg.sender] = true;
         contributorList.pushFront(progressiveId);
         contributorId[contributor.wallet] = progressiveId;
 
@@ -167,7 +165,7 @@ contract Project is Ownable, AccessControl {
         uint256 totalParticipationWeight = 0;
         unchecked {
             for (uint256 i = 0; i < _contributors.length; i++) {
-                if (!walletIsProjectContributor[_contributors[i]]) revert contributorErr();
+                if (!isContributorInProject(msg.sender)) revert contributorErr();
 
                 uint256 participationWeight = _participationWeights[i];
 
@@ -290,9 +288,8 @@ contract Project is Ownable, AccessControl {
         onlyAdmin
         isNotDeleted
     {
-        if (!walletIsProjectContributor[_contributor]) revert contributorErr();
+        if (!isContributorInProject(_contributor)) revert contributorErr();
 
-        walletIsProjectContributor[_contributor] = false;
         uint256 id = contributorId[_contributor];
         contributorId[_contributor] = 0;
         contributorList.remove(id);
@@ -402,8 +399,8 @@ contract Project is Ownable, AccessControl {
     }
 
     /// @notice Return true if the address is a contributor in the project
-    function isContributorInProject(address _contributor) external view returns (bool) {
-        return walletIsProjectContributor[_contributor];
+    function isContributorInProject(address _contributor) public view returns (bool) {
+        return contributorId[_contributor] != 0;
     }
 
     /// @notice Get the participation weight in percent
