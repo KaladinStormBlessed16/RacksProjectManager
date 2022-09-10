@@ -9,9 +9,6 @@ import "./Contributor.sol";
 import "./Err.sol";
 import "./StructuredLinkedList.sol";
 
-// debug import
-import "hardhat/console.sol";
-
 contract Project is Ownable, AccessControl {
     /// @notice Enumerations
     enum ProjectState {
@@ -176,7 +173,7 @@ contract Project is Ownable, AccessControl {
         }
         unchecked {
             (bool existNext, uint256 i) = contributorList.getNextNode(0);
-            console.log("i: %s, existNext: %s", i, existNext);
+
             while (i != 0 && existNext) {
                 address contrAddress = getValue(i).wallet;
 
