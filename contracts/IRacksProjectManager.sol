@@ -32,4 +32,6 @@ interface IRacksProjectManager {
     function setAccountToContributorData(address account, Contributor memory newData) external;
 
     function getIsPaused() external view returns (bool);
+
+    function deleteProject() external;
 }

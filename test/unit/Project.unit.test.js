@@ -68,6 +68,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       projectContract,
                       "maxContributorsNumberExceededErr"
                   );
+
+                  // if remove one contributor you can add an other one
+                  await projectContract.removeContributor(user2.address, true);
+                  await projectContract.connect(user3).registerProjectContributor();
               });
 
               it("Should revert if Contributor is banned with projectContributorIsBannedErr", async () => {
@@ -84,7 +88,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
               it("Should revert if Contributor has no Reputation Level Enough with projectContributorHasNoReputationEnoughErr", async () => {
                   await racksPM.createProject("Project2", 100, 2, 3);
-                  const projectAddress2 = (await racksPM.getProjects())[1];
+                  const projects = await racksPM.getProjects();
+                  const projectAddress2 = projects[0];
 
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
@@ -278,7 +283,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   );
 
                   await racksPM.createProject("Project2", 100, 1, 3);
-                  const projectAddress2 = (await racksPM.getProjects())[1];
+                  const projectAddress2 = (await racksPM.getProjects())[0];
 
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
@@ -300,8 +305,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   await project2Contract.finishProject(
                       500,
-                      [user2.address, user1.address, user3.address],
-                      [65, 35, 0]
+                      [user2.address, user1.address /*, user3.address*/],
+                      [65, 35 /*, 0*/]
                   );
 
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(9999999900);
