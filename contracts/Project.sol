@@ -29,7 +29,7 @@ contract Project is Ownable, AccessControl {
     /// @notice projectContributors
     using StructuredLinkedList for StructuredLinkedList.List;
     uint256 private progressiveId = 0;
-    Contributor[] private projectContributors;
+    mapping(uint256 => Contributor) private projectContributors;
     StructuredLinkedList.List private contributorList;
     mapping(address => uint256) private contributorId;
     mapping(address => uint256) private participationOfContributors;
@@ -44,7 +44,7 @@ contract Project is Ownable, AccessControl {
 
     /// @notice Check that the project has no contributors, therefore is editable
     modifier isEditable() {
-        if (projectContributors.length > 0) revert projectNoEditableErr();
+        if (contributorList.sizeOf() > 0) revert projectNoEditableErr();
         _;
     }
 
@@ -120,7 +120,7 @@ contract Project is Ownable, AccessControl {
         isNotDeleted
     {
         if (isContributorInProject(msg.sender)) revert projectContributorAlreadyExistsErr();
-        if (projectContributors.length == maxContributorsNumber)
+        if (contributorList.sizeOf() == maxContributorsNumber)
             revert maxContributorsNumberExceededErr();
 
         Contributor memory contributor = racksPM.getAccountToContributorData(msg.sender);
@@ -130,7 +130,7 @@ contract Project is Ownable, AccessControl {
             revert projectContributorHasNoReputationEnoughErr();
 
         progressiveId++;
-        projectContributors.push(contributor);
+        projectContributors[progressiveId] = contributor;
         contributorList.pushFront(progressiveId);
         contributorId[contributor.wallet] = progressiveId;
 
@@ -202,14 +202,17 @@ contract Project is Ownable, AccessControl {
         if (address(this).balance <= 0) revert noFundsGiveAwayErr();
         unchecked {
             uint256 projectBalance = address(this).balance;
-            for (uint256 i = 0; i < projectContributors.length; i++) {
-                address contrAddress = projectContributors[i].wallet;
-                if (!racksPM.isContributorBanned(contrAddress)) {
-                    (bool success, ) = contrAddress.call{
-                        value: (projectBalance * participationOfContributors[contrAddress]) / 100
-                    }("");
-                    if (!success) revert transferGiveAwayFailed();
-                }
+
+            (bool existNext, uint256 i) = contributorList.getNextNode(0);
+
+            while (i != 0 && existNext) {
+                address contrAddress = getValue(i).wallet;
+
+                (bool success, ) = contrAddress.call{
+                    value: (projectBalance * participationOfContributors[contrAddress]) / 100
+                }("");
+                if (!success) revert transferGiveAwayFailed();
+                (existNext, i) = contributorList.getNextNode(i);
             }
         }
     }
@@ -381,7 +384,7 @@ contract Project is Ownable, AccessControl {
 
     /// @notice Get total number of contributors
     function getContributorsNumber() external view returns (uint256) {
-        return projectContributors.length;
+        return contributorList.sizeOf();
     }
 
     /// @notice Return true is the project is completed, otherwise return false
@@ -391,8 +394,8 @@ contract Project is Ownable, AccessControl {
 
     /// @notice Return the contributor in the corresponding index
     function getProjectContributor(uint256 _index) external view returns (Contributor memory) {
-        if (_index >= projectContributors.length || _index < 0) revert projectInvalidParameterErr();
-        return projectContributors[_index];
+        if (_index < 0) revert projectInvalidParameterErr();
+        return getValue(_index + 1);
     }
 
     /// @notice Return true if the address is a contributor in the project
@@ -422,9 +425,7 @@ contract Project is Ownable, AccessControl {
      */
     function getValue(uint256 _id) public view returns (Contributor memory) {
         unchecked {
-            uint256 id = _id - 1;
-            require(id < _id);
-            return projectContributors[id];
+            return projectContributors[_id];
         }
     }
 
@@ -432,9 +433,7 @@ contract Project is Ownable, AccessControl {
      */
     function setValue(uint256 _id, Contributor memory _contributor) public {
         unchecked {
-            uint256 id = _id - 1;
-            require(id < _id);
-            projectContributors[id] = _contributor;
+            projectContributors[_id] = _contributor;
         }
     }
 

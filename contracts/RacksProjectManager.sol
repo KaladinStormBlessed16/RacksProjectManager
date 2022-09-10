@@ -233,28 +233,20 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         Project[] memory filteredProjects = new Project[](projects.length);
         if (hasRole(ADMIN_ROLE, msg.sender)) return projects;
 
-        if (walletIsContributor[msg.sender]) {
-            unchecked {
-                uint256 callerReputationLv = accountToContributorData[msg.sender].reputationLevel;
-                uint256 j = 0;
-                for (uint256 i = 0; i < projects.length; i++) {
-                    if (projects[i].getReputationLevel() <= callerReputationLv) {
-                        filteredProjects[j] = projects[i];
-                        j++;
-                    }
-                }
-            }
-        } else if (mrc.balanceOf(msg.sender) >= 1) {
-            unchecked {
-                uint256 j = 0;
-                for (uint256 i = 0; i < projects.length; i++) {
-                    if (projects[i].getReputationLevel() == 1) {
-                        filteredProjects[j] = projects[i];
-                        j++;
-                    }
+        uint256 callerReputationLv = walletIsContributor[msg.sender]
+            ? accountToContributorData[msg.sender].reputationLevel
+            : 1;
+
+        unchecked {
+            uint256 j = 0;
+            for (uint256 i = 0; i < projects.length; i++) {
+                if (projects[i].getReputationLevel() <= callerReputationLv) {
+                    filteredProjects[j] = projects[i];
+                    j++;
                 }
             }
         }
+
         return filteredProjects;
     }
 

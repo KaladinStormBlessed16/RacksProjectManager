@@ -68,6 +68,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       projectContract,
                       "maxContributorsNumberExceededErr"
                   );
+
+                  // if remove one contributor you can add an other one
+                  await projectContract.removeContributor(user2.address, true);
+                  await projectContract.connect(user3).registerProjectContributor();
               });
 
               it("Should revert if Contributor is banned with projectContributorIsBannedErr", async () => {
