@@ -25,8 +25,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               await racksPM.createProject("Project1", 100, 1, 2);
               const projectAddress = await (await racksPM.getProjects())[0];
 
-              const Project = await ethers.getContractFactory("Project");
-              projectContract = Project.attach(projectAddress);
+              projectContract = await ethers.getContractAt("Project", projectAddress);
 
               await erc20.connect(user1).mintMore();
               await erc20.connect(user2).mintMore();
@@ -111,8 +110,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await racksPM.connect(user1).registerContributor();
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
-                  const projectContributor = await projectContract.getProjectContributor(0);
-                  assert(projectContributor.wallet === user1.address);
+                  const projectContributorsAddress =
+                      await projectContract.getAllContributorsAddress();
+                  assert(projectContributorsAddress[0] === user1.address);
               });
               it("Should revert if the smart contract is paused", async () => {
                   await mrc.connect(user1).mint(1);
@@ -248,14 +248,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await erc20.balanceOf(user2.address)).to.be.equal(10000000000);
 
                   expect(
-                      await projectContract.getContributorParticipationWeight(user1.address)
+                      await projectContract.getContributorParticipation(user1.address)
                   ).to.be.equal(30);
                   expect(
-                      await projectContract.getContributorParticipationWeight(user2.address)
+                      await projectContract.getContributorParticipation(user2.address)
                   ).to.be.equal(70);
 
-                  const pcUser1 = await projectContract.getProjectContributor(0);
-                  const pcUser2 = await projectContract.getProjectContributor(1);
+                  const pcUser1 = await racksPM.getContributorData(user1.address);
+                  const pcUser2 = await racksPM.getContributorData(user2.address);
 
                   expect(pcUser1.wallet).to.be.equal(user1.address);
                   expect(pcUser1.reputationLevel).to.be.equal(2);
@@ -312,12 +312,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(9999999900);
 
                   expect(
-                      await project2Contract.getContributorParticipationWeight(user3.address)
+                      await project2Contract.getContributorParticipation(user3.address)
                   ).to.be.equal(0);
 
-                  const pcUserBanned = await project2Contract.getProjectContributor(0);
-                  const pcUser1 = await project2Contract.getProjectContributor(1);
-                  const pcUser2 = await project2Contract.getProjectContributor(2);
+                  const pcUserBanned = await racksPM.getContributorData(user3.address);
+                  const pcUser1 = await racksPM.getContributorData(user1.address);
+                  const pcUser2 = await racksPM.getContributorData(user2.address);
 
                   expect(pcUserBanned.wallet).to.be.equal(user3.address);
                   expect(pcUserBanned.reputationLevel).to.be.equal(1);

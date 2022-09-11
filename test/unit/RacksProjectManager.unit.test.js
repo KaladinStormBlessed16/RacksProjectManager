@@ -5,7 +5,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Racks Project Manager Unit Tests", function () {
-          let racksPM, mrc, erc20, deployer, user1;
+          let racksPM, mrc, erc20, deployer, user1, user2, project1;
 
           beforeEach(async () => {
               accounts = await ethers.getSigners(); // could also do with getNamedAccounts
@@ -13,16 +13,23 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
               await deployments.fixture(["rackspm", "mocks"]);
 
-              let racksPMContract = await ethers.getContract("RacksProjectManager");
+              const racksPMContract = await ethers.getContract("RacksProjectManager");
               racksPM = racksPMContract.connect(deployer);
 
-              let mrcContract = await ethers.getContract("MRCRYPTO");
+              const mrcContract = await ethers.getContract("MRCRYPTO");
               mrc = await mrcContract.connect(deployer);
 
-              let erc20Contract = await ethers.getContract("MockErc20");
+              const erc20Contract = await ethers.getContract("MockErc20");
               erc20 = await erc20Contract.connect(deployer);
 
-              await racksPM.createProject("Project1", 100, 1, 2);
+              const tx = await racksPM.createProject("Project1", 100, 1, 2);
+              const rc = await tx.wait();
+              const { newProjectAddress } = rc.events.find(
+                  (e) => e.event == "newProjectCreated"
+              ).args;
+
+              project1 = await ethers.getContractAt("Project", newProjectAddress);
+              project1 = await project1.connect(deployer);
           });
 
           describe("Setup", () => {
@@ -56,12 +63,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       racksPM.createProject("Project2", 0, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+
                   await expect(
                       racksPM.createProject("Project2", 100, 0, 2)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+
                   await expect(
                       racksPM.createProject("Project2", 100, 1, 0)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+
                   await expect(racksPM.createProject("", 100, 1, 3)).to.be.revertedWithCustomError(
                       racksPM,
                       "projectInvalidParameterErr"
@@ -80,6 +90,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       racksPM.connect(user1).createProject("Project3", 100, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
+
+                  const projects = await racksPM.getAllProjects();
+                  assert.equal(projects[1], project1.address);
               });
 
               it("Should revert if the smart contract is paused", async () => {

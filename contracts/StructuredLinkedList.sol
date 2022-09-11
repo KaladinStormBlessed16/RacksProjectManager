@@ -2,10 +2,6 @@
 
 pragma solidity ^0.8.7;
 
-interface IStructureInterface {
-    function getValue(uint256 _id) external view returns (uint256);
-}
-
 /**
  * @title StructuredLinkedList
  * @author Vittorio Minacori (https://github.com/vittominacori)
@@ -21,20 +17,6 @@ library StructuredLinkedList {
     struct List {
         uint256 size;
         mapping(uint256 => mapping(bool => uint256)) list;
-    }
-
-    /**
-     * @dev Checks if the list exists
-     * @param self stored linked list from contract
-     * @return bool true if list exists, false otherwise
-     */
-    function listExists(List storage self) internal view returns (bool) {
-        // if the head nodes previous or next pointers both point to itself, then there are no items in the list
-        if (self.list[_HEAD][_PREV] != _HEAD || self.list[_HEAD][_NEXT] != _HEAD) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /**
@@ -62,28 +44,6 @@ library StructuredLinkedList {
      */
     function sizeOf(List storage self) internal view returns (uint256) {
         return self.size;
-    }
-
-    /**
-     * @dev Returns the links of a node as a tuple
-     * @param self stored linked list from contract
-     * @param _node id of the node to get
-     * @return bool, uint256, uint256 true if node exists or false otherwise, previous node, next node
-     */
-    function getNode(List storage self, uint256 _node)
-        internal
-        view
-        returns (
-            bool,
-            uint256,
-            uint256
-        )
-    {
-        if (!nodeExists(self, _node)) {
-            return (false, 0, 0);
-        } else {
-            return (true, self.list[_node][_PREV], self.list[_node][_NEXT]);
-        }
     }
 
     /**
@@ -127,34 +87,6 @@ library StructuredLinkedList {
         returns (bool, uint256)
     {
         return getAdjacent(self, _node, _PREV);
-    }
-
-    /**
-     * @dev Can be used before `insert` to build an ordered list.
-     * @dev Get the node and then `insertBefore` or `insertAfter` basing on your list order.
-     * @dev If you want to order basing on other than `structure.getValue()` override this function
-     * @param self stored linked list from contract
-     * @param _structure the structure instance
-     * @param _value value to seek
-     * @return uint256 next node with a value less than _value
-     */
-    function getSortedSpot(
-        List storage self,
-        address _structure,
-        uint256 _value
-    ) internal view returns (uint256) {
-        if (sizeOf(self) == 0) {
-            return 0;
-        }
-
-        uint256 next;
-        (, next) = getAdjacent(self, _HEAD, _NEXT);
-        while (
-            (next != 0) && ((_value < IStructureInterface(_structure).getValue(next)) != _NEXT)
-        ) {
-            next = self.list[next][_NEXT];
-        }
-        return next;
     }
 
     /**
@@ -224,24 +156,6 @@ library StructuredLinkedList {
      */
     function pushBack(List storage self, uint256 _node) internal returns (bool) {
         return _push(self, _node, _PREV);
-    }
-
-    /**
-     * @dev Pops the first entry from the head of the linked list
-     * @param self stored linked list from contract
-     * @return uint256 the removed node
-     */
-    function popFront(List storage self) internal returns (uint256) {
-        return _pop(self, _NEXT);
-    }
-
-    /**
-     * @dev Pops the first entry from the tail of the linked list
-     * @param self stored linked list from contract
-     * @return uint256 the removed node
-     */
-    function popBack(List storage self) internal returns (uint256) {
-        return _pop(self, _PREV);
     }
 
     /**

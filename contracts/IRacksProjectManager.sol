@@ -24,14 +24,11 @@ interface IRacksProjectManager {
 
     function isContributorBanned(address account) external view returns (bool);
 
-    function getAccountToContributorData(address account)
-        external
-        view
-        returns (Contributor memory);
+    function getContributorData(address account) external view returns (Contributor memory);
 
     function setAccountToContributorData(address account, Contributor memory newData) external;
 
-    function getIsPaused() external view returns (bool);
+    function isPaused() external view returns (bool);
 
     function deleteProject() external;
 }
