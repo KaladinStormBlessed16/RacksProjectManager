@@ -4,12 +4,12 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IRacksProjectManager.sol";
+import "./interfaces/IRacksProjectManager.sol";
+import "./interfaces/IMRC.sol";
 import "./Project.sol";
 import "./Contributor.sol";
-import "./IMRC.sol";
 import "./Err.sol";
-import "./StructuredLinkedList.sol";
+import "./library/StructuredLinkedList.sol";
 
 //              ▟██████████   █████    ▟███████████   █████████████
 //            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
@@ -32,7 +32,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     /// @notice State variables
     bytes32 private constant ADMIN_ROLE = 0x00;
     address[] private contributors;
-    bool private isPaused;
+    bool private paused;
     uint256 progressiveId;
 
     using StructuredLinkedList for StructuredLinkedList.List;
@@ -43,7 +43,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     mapping(address => bool) private walletIsContributor;
     mapping(address => bool) private accountIsBanned;
     mapping(address => uint256) private projectId;
-    mapping(address => Contributor) private accountToContributorData;
+    mapping(address => Contributor) private contributorsData;
 
     /// @notice Check that user is Admin
     modifier onlyAdmin() {
@@ -57,15 +57,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         _;
     }
 
-    /// @notice Check that user is Contributor
-    modifier onlyContributor() {
-        if (!walletIsContributor[msg.sender]) revert contributorErr();
-        _;
-    }
-
     /// @notice Check that the smart contract is paused
     modifier isNotPaused() {
-        if (isPaused) revert pausedErr();
+        if (paused) revert pausedErr();
         _;
     }
 
@@ -125,7 +119,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
         contributors.push(msg.sender);
         walletIsContributor[msg.sender] = true;
-        accountToContributorData[msg.sender] = Contributor(msg.sender, 1, 0, false);
+        contributorsData[msg.sender] = Contributor(msg.sender, 1, 0, false);
         emit newContributorRegistered(msg.sender);
     }
 
@@ -183,7 +177,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
             while (i != 0 && existNext) {
                 Project project = projectStore[i];
 
-                if (project.getIsActive() && project.isContributorInProject(_account)) {
+                if (project.isActive() && project.isContributorInProject(_account)) {
                     project.removeContributor(_account, false);
                 }
 
@@ -192,27 +186,24 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         }
     }
 
-    /**
-     * @notice Set Contributor Data by address
-     * @dev Only callable by Admins.
-     */
+    /// @inheritdoc IRacksProjectManager
     function setAccountToContributorData(address _account, Contributor memory _newData)
         public
         override
         onlyAdmin
     {
-        accountToContributorData[_account] = _newData;
+        contributorsData[_account] = _newData;
     }
 
     function setIsPaused(bool _newPausedValue) public onlyAdmin {
-        isPaused = _newPausedValue;
+        paused = _newPausedValue;
     }
 
     ////////////////////////
     //  Getter Functions //
     //////////////////////
 
-    /// @notice Returns whether an address is admin or not
+    /// @inheritdoc IRacksProjectManager
     function isAdmin(address _account) public view override returns (bool) {
         return hasRole(ADMIN_ROLE, _account);
     }
@@ -222,20 +213,17 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return mrc;
     }
 
-    /// @notice Returns ERC20 address
+    /// @inheritdoc IRacksProjectManager
     function getERC20Interface() public view override returns (IERC20) {
         return erc20;
     }
 
-    /// @notice Returns Contract Owner
+    /// @inheritdoc IRacksProjectManager
     function getRacksPMOwner() public view override returns (address) {
         return owner();
     }
 
-    /**
-     * @notice Check whether an account is banned or not
-     * @dev Only callable by Admins.
-     */
+    /// @inheritdoc IRacksProjectManager
     function isContributorBanned(address _account) external view override returns (bool) {
         return accountIsBanned[_account];
     }
@@ -245,12 +233,12 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @dev Only callable by Holders
      */
     function getProjects() public view onlyHolder returns (Project[] memory) {
-        if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProject();
+        if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProjects();
         Project[] memory filteredProjects = new Project[](projectsList.sizeOf());
 
         unchecked {
             uint256 callerReputationLv = walletIsContributor[msg.sender]
-                ? accountToContributorData[msg.sender].reputationLevel
+                ? contributorsData[msg.sender].reputationLevel
                 : 1;
             uint256 j = 0;
             (bool existNext, uint256 i) = projectsList.getNextNode(0);
@@ -267,8 +255,8 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return filteredProjects;
     }
 
-    function getAllProject() public view returns (Project[] memory) {
-        Project[] memory allProjects = new Project[](progressiveId);
+    function getAllProjects() public view returns (Project[] memory) {
+        Project[] memory allProjects = new Project[](projectsList.sizeOf());
 
         uint256 j = 0;
         (bool existNext, uint256 i) = projectsList.getNextNode(0);
@@ -288,29 +276,29 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @notice Get Contributor by index
     function getContributor(uint256 _index) public view returns (Contributor memory) {
-        return accountToContributorData[contributors[_index]];
+        return contributorsData[contributors[_index]];
     }
 
-    /// @notice Check whether an address is Contributor or not
+    /// @inheritdoc IRacksProjectManager
     function isWalletContributor(address _account) public view override returns (bool) {
         return walletIsContributor[_account];
     }
 
-    /// @notice Get Contributor Data by address
-    function getAccountToContributorData(address _account)
+    /// @inheritdoc IRacksProjectManager
+    function getContributorData(address _account)
         public
         view
         override
         returns (Contributor memory)
     {
-        return accountToContributorData[_account];
+        return contributorsData[_account];
     }
 
     /**
      * @notice Get total number of projects
      * @dev Only callable by Holders
      */
-    function getProjectsNumber() external view onlyHolder returns (uint256) {
+    function getNumberOfProjects() external view onlyHolder returns (uint256) {
         return projectsList.sizeOf();
     }
 
@@ -318,19 +306,23 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Get total number of contributors
      * @dev Only callable by Holders
      */
-    function getContributorsNumber() external view onlyHolder returns (uint256) {
+    function getNumberOfContributors() external view onlyHolder returns (uint256) {
         return contributors.length;
     }
 
-    function getIsPaused() external view override returns (bool) {
-        return isPaused;
+    /// @inheritdoc IRacksProjectManager
+    function isPaused() external view override returns (bool) {
+        return paused;
     }
 
+    /// @inheritdoc IRacksProjectManager
     function deleteProject() external override {
         uint256 id = projectId[msg.sender];
 
-        projectId[msg.sender] = 0;
+        require(id != 0);
 
+        projectId[msg.sender] = 0;
         projectsList.remove(id);
+        projectsDeleted.push(Project(payable(msg.sender)));
     }
 }
