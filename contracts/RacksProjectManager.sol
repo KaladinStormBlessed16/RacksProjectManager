@@ -186,10 +186,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         }
     }
 
-    /**
-     * @notice Set Contributor Data by address
-     * @dev Only callable by Admins.
-     */
+    /// @inheritdoc IRacksProjectManager
     function setAccountToContributorData(address _account, Contributor memory _newData)
         public
         override
@@ -206,7 +203,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     //  Getter Functions //
     //////////////////////
 
-    /// @notice Returns whether an address is admin or not
+    /// @inheritdoc IRacksProjectManager
     function isAdmin(address _account) public view override returns (bool) {
         return hasRole(ADMIN_ROLE, _account);
     }
@@ -216,20 +213,17 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return mrc;
     }
 
-    /// @notice Returns ERC20 address
+    /// @inheritdoc IRacksProjectManager
     function getERC20Interface() public view override returns (IERC20) {
         return erc20;
     }
 
-    /// @notice Returns Contract Owner
+    /// @inheritdoc IRacksProjectManager
     function getRacksPMOwner() public view override returns (address) {
         return owner();
     }
 
-    /**
-     * @notice Check whether an account is banned or not
-     * @dev Only callable by Admins.
-     */
+    /// @inheritdoc IRacksProjectManager
     function isContributorBanned(address _account) external view override returns (bool) {
         return accountIsBanned[_account];
     }
@@ -285,12 +279,12 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return contributorsData[contributors[_index]];
     }
 
-    /// @notice Check whether an address is Contributor or not
+    /// @inheritdoc IRacksProjectManager
     function isWalletContributor(address _account) public view override returns (bool) {
         return walletIsContributor[_account];
     }
 
-    /// @notice Get Contributor Data by address
+    /// @inheritdoc IRacksProjectManager
     function getContributorData(address _account)
         public
         view
@@ -316,12 +310,16 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return contributors.length;
     }
 
+    /// @inheritdoc IRacksProjectManager
     function isPaused() external view override returns (bool) {
         return paused;
     }
 
+    /// @inheritdoc IRacksProjectManager
     function deleteProject() external override {
         uint256 id = projectId[msg.sender];
+
+        require(id != 0);
 
         projectId[msg.sender] = 0;
         projectsList.remove(id);
