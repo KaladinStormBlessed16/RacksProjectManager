@@ -57,12 +57,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         _;
     }
 
-    /// @notice Check that user is Contributor
-    modifier onlyContributor() {
-        if (!walletIsContributor[msg.sender]) revert contributorErr();
-        _;
-    }
-
     /// @notice Check that the smart contract is paused
     modifier isNotPaused() {
         if (paused) revert pausedErr();
@@ -310,7 +304,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @notice Get total number of projects
      * @dev Only callable by Holders
      */
-    function getProjectsNumber() external view onlyHolder returns (uint256) {
+    function getNumberOfProjects() external view onlyHolder returns (uint256) {
         return projectsList.sizeOf();
     }
 
@@ -330,7 +324,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         uint256 id = projectId[msg.sender];
 
         projectId[msg.sender] = 0;
-
         projectsList.remove(id);
+        projectsDeleted.push(Project(payable(msg.sender)));
     }
 }

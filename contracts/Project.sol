@@ -387,7 +387,7 @@ contract Project is Ownable, AccessControl {
     }
 
     /// @notice Get total number of contributors
-    function getContributorsNumber() external view returns (uint256) {
+    function getNumberOfContributors() external view returns (uint256) {
         return contributorList.sizeOf();
     }
 

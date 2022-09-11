@@ -39,6 +39,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   ).to.be.revertedWithCustomError(projectContract, "contributorErr");
               });
 
+              it("Should revert with contributorErr because can not remove a contributor that is not in the project", async () => {
+                  await expect(
+                      projectContract.removeContributor(user1.address, true)
+                  ).to.be.revertedWithCustomError(projectContract, "contributorErr");
+              });
+
               it("Should revert with projectContributorAlreadyExistsErr and maxContributorsNumberExceededErr", async () => {
                   await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
@@ -52,10 +58,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       "projectContributorAlreadyExistsErr"
                   );
 
+                  const previosBalance = await erc20.balanceOf(user2.address);
+
                   await mrc.connect(user2).mint(1);
                   await racksPM.connect(user2).registerContributor();
                   await erc20.connect(user2).approve(projectContract.address, 100);
                   await projectContract.connect(user2).registerProjectContributor();
+
+                  assert.equal(await projectContract.getNumberOfContributors(), 2);
 
                   await mrc.connect(user3).mint(1);
                   await racksPM.connect(user3).registerContributor();
@@ -70,7 +80,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   // if remove one contributor you can add an other one
                   await projectContract.removeContributor(user2.address, true);
+
+                  assert.equal(await projectContract.getNumberOfContributors(), 1);
+
+                  const postBalance = await erc20.balanceOf(user2.address);
+                  assert.equal(postBalance.toString(), previosBalance.toString());
+
                   await projectContract.connect(user3).registerProjectContributor();
+
+                  assert.equal(await projectContract.getNumberOfContributors(), 2);
               });
 
               it("Should revert if Contributor is banned with projectContributorIsBannedErr", async () => {
@@ -113,6 +131,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   const projectContributorsAddress =
                       await projectContract.getAllContributorsAddress();
                   assert(projectContributorsAddress[0] === user1.address);
+                  assert.equal(await projectContract.getNumberOfContributors(), 1);
               });
               it("Should revert if the smart contract is paused", async () => {
                   await mrc.connect(user1).mint(1);
@@ -238,11 +257,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await projectContract.connect(user2).registerProjectContributor();
                   expect(await erc20.balanceOf(user2.address)).to.be.equal(9999999900);
 
+                  expect(await projectContract.isFinished()).to.be.false;
+
                   await projectContract.finishProject(
                       500,
                       [user2.address, user1.address],
                       [70, 30]
                   );
+
+                  expect(await projectContract.isFinished()).to.be.true;
 
                   expect(await erc20.balanceOf(user1.address)).to.be.equal(10000000000);
                   expect(await erc20.balanceOf(user2.address)).to.be.equal(10000000000);
@@ -305,8 +328,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   await project2Contract.finishProject(
                       500,
-                      [user2.address, user1.address /*, user3.address*/],
-                      [65, 35 /*, 0*/]
+                      [user2.address, user1.address],
+                      [65, 35]
                   );
 
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(9999999900);
