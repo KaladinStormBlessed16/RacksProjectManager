@@ -4,10 +4,10 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./IRacksProjectManager.sol";
+import "./interfaces/IRacksProjectManager.sol";
 import "./Contributor.sol";
 import "./Err.sol";
-import "./StructuredLinkedList.sol";
+import "./library/StructuredLinkedList.sol";
 
 contract Project is Ownable, AccessControl {
     /// @notice Enumerations

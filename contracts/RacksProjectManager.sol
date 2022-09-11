@@ -4,12 +4,12 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IRacksProjectManager.sol";
+import "./interfaces/IRacksProjectManager.sol";
+import "./interfaces/IMRC.sol";
 import "./Project.sol";
 import "./Contributor.sol";
-import "./IMRC.sol";
 import "./Err.sol";
-import "./StructuredLinkedList.sol";
+import "./library/StructuredLinkedList.sol";
 
 //              ▟██████████   █████    ▟███████████   █████████████
 //            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
