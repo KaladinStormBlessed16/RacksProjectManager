@@ -89,12 +89,6 @@ contract Project is Ownable, AccessControl {
         uint256 _reputationLevel,
         uint256 _maxContributorsNumber
     ) {
-        if (
-            _colateralCost <= 0 ||
-            _reputationLevel <= 0 ||
-            _maxContributorsNumber <= 0 ||
-            bytes(_name).length <= 0
-        ) revert projectInvalidParameterErr();
         racksPM = _racksPM;
         name = _name;
         colateralCost = _colateralCost;
