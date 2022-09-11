@@ -17,16 +17,17 @@ interface IRacksProjectManager {
     /**
      * @notice Event emitted when a new contributor is registered in RacksProjectManager
      */
-    event newContributorRegistered(address _newContributor);
+    event newContributorRegistered(address newContributor);
 
     /**
      * @notice Event emitted when a new project is created in RacksProjectsManager
      */
-    event newProjectCreated(string _name, address _newProjectAddress);
+    event newProjectCreated(string name, address newProjectAddress);
 
     /////////////////////////////
     ///   Abstract functions  ///
     /////////////////////////////
+
     /**
      * @notice Returns true if @param _account is admin in RacksProjectsManager otherwise returns false
      */
