@@ -5,7 +5,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Racks Project Manager Unit Tests", function () {
-          let racksPM, mrc, erc20, deployer, user1;
+          let racksPM, mrc, erc20, deployer, user1, user2, project1;
 
           beforeEach(async () => {
               accounts = await ethers.getSigners(); // could also do with getNamedAccounts
@@ -13,16 +13,26 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
               await deployments.fixture(["rackspm", "mocks"]);
 
-              let racksPMContract = await ethers.getContract("RacksProjectManager");
+              const racksPMContract = await ethers.getContract("RacksProjectManager");
               racksPM = racksPMContract.connect(deployer);
 
-              let mrcContract = await ethers.getContract("MRCRYPTO");
+              const mrcContract = await ethers.getContract("MRCRYPTO");
               mrc = await mrcContract.connect(deployer);
 
-              let erc20Contract = await ethers.getContract("MockErc20");
+              const erc20Contract = await ethers.getContract("MockErc20");
               erc20 = await erc20Contract.connect(deployer);
 
-              await racksPM.createProject("Project1", 100, 1, 2);
+              const tx = await racksPM.createProject("Project1", 100, 1, 2);
+              const rc = await tx.wait();
+              const { newProjectAddress } = rc.events.find(
+                  (e) => e.event == "newProjectCreated"
+              ).args;
+
+              project1 = await ethers.getContractAt("Project", newProjectAddress);
+              project1 = await project1.connect(deployer);
+
+              const mrcAddress = await racksPMContract.getMRCInterface();
+              assert.equal(mrcAddress, mrcContract.address);
           });
 
           describe("Setup", () => {
@@ -56,30 +66,57 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await expect(
                       racksPM.createProject("Project2", 0, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+
                   await expect(
                       racksPM.createProject("Project2", 100, 0, 2)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+
                   await expect(
                       racksPM.createProject("Project2", 100, 1, 0)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+
                   await expect(racksPM.createProject("", 100, 1, 3)).to.be.revertedWithCustomError(
                       racksPM,
                       "projectInvalidParameterErr"
                   );
               });
 
-              it("Should create project", async () => {
+              it("Should create project and then deleted correctly", async () => {
                   await racksPM.addAdmin(user1.address);
                   expect(await racksPM.isAdmin(user1.address)).to.be.true;
                   expect(await racksPM.isAdmin(user2.address)).to.be.false;
 
-                  await racksPM.connect(user1).createProject("Project2", 100, 1, 2);
+                  const tx = await racksPM.connect(user1).createProject("Project2", 100, 1, 2);
+                  const rc = await tx.wait();
+                  const { newProjectAddress: project2Address } = rc.events.find(
+                      (e) => e.event == "newProjectCreated"
+                  ).args;
+                  const project2 = await ethers.getContractAt("Project", project2Address);
+
                   assert.lengthOf(await racksPM.getProjects(), 2);
+                  assert.equal(await racksPM.getNumberOfProjects(), 2);
 
                   await racksPM.removeAdmin(user1.address);
                   await expect(
                       racksPM.connect(user1).createProject("Project3", 100, 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
+
+                  let projects = await racksPM.getAllProjects();
+                  expect(projects).to.have.same.members([project1.address, project2.address]);
+
+                  expect(await project2.isActive()).to.be.true;
+                  expect(await project2.isDeleted()).to.be.false;
+
+                  await project2.deleteProject();
+
+                  expect(await project2.isActive()).to.be.false;
+                  expect(await project2.isDeleted()).to.be.true;
+
+                  projects = await racksPM.getAllProjects();
+                  expect(projects).to.have.same.members([project1.address]);
+
+                  const projectsDeleted = await racksPM.getProjectsDeleted();
+                  expect(projectsDeleted).to.have.same.members([project2.address]);
               });
 
               it("Should revert if the smart contract is paused", async () => {
@@ -112,6 +149,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await racksPM.connect(user1).registerContributor();
                   let contributor = await racksPM.connect(user1).getContributor(0);
                   assert(contributor.wallet == user1.address);
+                  assert.equal(await racksPM.getNumberOfContributors(), 1);
               });
 
               it("Should revert if the smart contract is paused", async () => {
@@ -133,23 +171,32 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retieve only Lv1 Projects called by a Holder", async () => {
-                  await racksPM.createProject("Project2", 100, 1, 2);
+                  await racksPM.createProject("Project2", 100, 2, 2);
                   await racksPM.createProject("Project3", 100, 3, 2);
 
                   await mrc.connect(user1).mint(1);
                   const projects = await racksPM.connect(user1).getProjects();
                   assert.lengthOf(
                       projects.filter((p) => p !== ethers.constants.AddressZero),
-                      2
+                      1
                   );
               });
 
-              it("Should retrieve only Lv1 Projects called by a Contributor", async () => {
-                  await racksPM.createProject("Project2", 100, 1, 2);
+              it("Should retrieve only Lv2 or less Projects called by a Contributor", async () => {
+                  await racksPM.createProject("Project2", 100, 2, 2);
                   await racksPM.createProject("Project3", 100, 3, 2);
 
-                  (await mrc.connect(user1).mint(1)).wait();
+                  await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
+
+                  // set level of contributor to lvl 2
+                  await racksPM.setAccountToContributorData(user1.address, [
+                      user1.address,
+                      2,
+                      0,
+                      false,
+                  ]);
+
                   const projects = await racksPM.connect(user1).getProjects();
                   assert.lengthOf(
                       projects.filter((p) => p !== ethers.constants.AddressZero),
@@ -158,7 +205,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retrieve all Projects called by an Admin", async () => {
-                  await racksPM.createProject("Project2", 100, 1, 2);
+                  await racksPM.createProject("Project2", 100, 2, 2);
                   await racksPM.createProject("Project3", 100, 3, 2);
 
                   const projects = await racksPM.getProjects();

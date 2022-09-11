@@ -51,6 +51,23 @@
 
 # Racks Project Manager
 
+```
+
+                   ▟██████████   █████    ▟███████████   █████████████
+                 ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
+                ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
+                 ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
+                   ▀     █████   █████████▛      █████     ▟██████▛
+                         █████   ███████▛      ▟█████▛   ▟██████▛
+        ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
+       ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
+      ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
+                             ▜██████▙            ▟██████▛          ┌────────┐
+                               ▜██████▙        ▟██████▛            │  LABS  │
+                                                                   └────────┘
+
+```
+
 ## About the project
 
 This Smart Contract allows the management of Projects in Racks Labs with the aim of organizing the Mr.Crypto developer community, looking forward to boosting productivity and channeling efforts and contributions into specific development lines required by the community itself.
