@@ -30,6 +30,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
               project1 = await ethers.getContractAt("Project", newProjectAddress);
               project1 = await project1.connect(deployer);
+              await project1.approveProject();
 
               const mrcAddress = await racksPMContract.getMRCInterface();
               assert.equal(mrcAddress, mrcContract.address);
@@ -92,6 +93,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       (e) => e.event == "newProjectCreated"
                   ).args;
                   const project2 = await ethers.getContractAt("Project", project2Address);
+                  await project2.approveProject();
 
                   assert.lengthOf(await racksPM.getProjects(), 2);
                   assert.equal(await racksPM.getNumberOfProjects(), 2);

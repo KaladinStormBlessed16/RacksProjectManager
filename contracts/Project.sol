@@ -12,12 +12,14 @@ import "./library/StructuredLinkedList.sol";
 contract Project is Ownable, AccessControl {
     /// @notice Enumerations
     enum ProjectState {
+        Pending,
         Active,
         Finished,
         Deleted
     }
 
     /// @notice Constants
+    ProjectState private constant PENDING = ProjectState.Pending;
     ProjectState private constant ACTIVE = ProjectState.Active;
     ProjectState private constant FINISHED = ProjectState.Finished;
     ProjectState private constant DELETED = ProjectState.Deleted;
@@ -73,6 +75,12 @@ contract Project is Ownable, AccessControl {
         _;
     }
 
+    /// @notice Check that the smart contract is not Pending
+    modifier isNotPending() {
+        if (projectState == PENDING) revert pendingErr();
+        _;
+    }
+
     /// @notice Check that the smart contract is not Deleted
     modifier isNotDeleted() {
         if (projectState == DELETED) revert deletedErr();
@@ -97,6 +105,7 @@ contract Project is Ownable, AccessControl {
         _setupRole(ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, _racksPM.getRacksPMOwner());
         racksPM_ERC20 = _racksPM.getERC20Interface();
+        projectState = PENDING;
     }
 
     ////////////////////////
@@ -113,6 +122,7 @@ contract Project is Ownable, AccessControl {
         isNotFinished
         isNotPaused
         isNotDeleted
+        isNotPending
     {
         if (isContributorInProject(msg.sender)) revert projectContributorAlreadyExistsErr();
         if (contributorList.sizeOf() == maxContributorsNumber)
@@ -146,7 +156,7 @@ contract Project is Ownable, AccessControl {
         uint256 _totalReputationPointsReward,
         address[] memory _contributors,
         uint256[] memory _participationWeights
-    ) external onlyAdmin isNotFinished isNotPaused isNotDeleted {
+    ) external onlyAdmin isNotFinished isNotPaused isNotDeleted isNotPending {
         if (
             _totalReputationPointsReward <= 0 ||
             _contributors.length != contributorList.sizeOf() ||
@@ -184,16 +194,66 @@ contract Project is Ownable, AccessControl {
                 (existNext, i) = contributorList.getNextNode(i);
             }
         }
-        if (racksPM_ERC20.balanceOf(address(this)) > 0) withdrawFunds();
+        if (racksPM_ERC20.balanceOf(address(this)) > 0) shareProfits();
     }
 
     /**
      * @notice Give Away extra rewards
      * @dev Only callable by Admins when the project is completed
      */
-    function giveAway() external onlyAdmin isNotPaused isNotDeleted {
+    function giveAway() external onlyAdmin isNotPaused isNotDeleted isNotPending {
         if (projectState != ProjectState.Finished) revert notCompletedErr();
 
+        if (address(this).balance <= 0 && racksPM_ERC20.balanceOf(address(this)) <= 0)
+            revert noFundsGiveAwayErr();
+
+        shareProfits();
+    }
+
+    ////////////////////////
+    //  Helper Functions //
+    //////////////////////
+
+    /**
+     * @notice Used to give away profits
+     * @dev Only callable by Admins when project completed
+     */
+    function shareProfits() private onlyAdmin {
+        if (projectState != ProjectState.Finished) revert notCompletedErr();
+
+        unchecked {
+            uint256 projectBalanceERC20 = racksPM_ERC20.balanceOf(address(this));
+            uint256 projectBalanceEther = address(this).balance;
+            (bool existNext, uint256 i) = contributorList.getNextNode(0);
+
+            while (i != 0 && existNext) {
+                address contrAddress = projectContributors[i].wallet;
+                if (racksPM_ERC20.balanceOf(address(this)) > 0) {
+                    bool successTransfer = racksPM_ERC20.transfer(
+                        contrAddress,
+                        (projectBalanceERC20 * participationOfContributors[contrAddress]) / 100
+                    );
+                    if (!successTransfer) revert erc20TransferFailed();
+                }
+
+                if (address(this).balance > 0) {
+                    (bool success, ) = contrAddress.call{
+                        value: (projectBalanceEther * participationOfContributors[contrAddress]) /
+                            100
+                    }("");
+                    if (!success) revert transferGiveAwayFailed();
+                }
+                (existNext, i) = contributorList.getNextNode(i);
+            }
+        }
+    }
+
+    /**
+     * @notice Used to give away primitive profits
+     * @dev Only callable by Admins when project completed
+     */
+    function shareProfitsEther() private onlyAdmin {
+        if (projectState != ProjectState.Finished) revert notCompletedErr();
         if (address(this).balance <= 0) revert noFundsGiveAwayErr();
         unchecked {
             uint256 projectBalance = address(this).balance;
@@ -211,21 +271,6 @@ contract Project is Ownable, AccessControl {
                 (existNext, i) = contributorList.getNextNode(i);
             }
         }
-    }
-
-    ////////////////////////
-    //  Helper Functions //
-    //////////////////////
-
-    /**
-     * @notice Used to withdraw All funds
-     * @dev Only callable by Admins when completing the project
-     */
-    function withdrawFunds() private onlyAdmin {
-        if (racksPM_ERC20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
-
-        bool success = racksPM_ERC20.transfer(owner(), racksPM_ERC20.balanceOf(address(this)));
-        if (!success) revert erc20TransferFailed();
     }
 
     /**
@@ -301,6 +346,14 @@ contract Project is Ownable, AccessControl {
     ////////////////////////
     //  Setter Functions //
     //////////////////////
+
+    /**
+     * @notice  the Project State
+     * @dev Only callable by Admins when the project has no Contributor yet and is pending.
+     */
+    function approveProject() external onlyAdmin isEditable isNotPaused isNotDeleted {
+        if (projectState == PENDING) projectState = ACTIVE;
+    }
 
     /**
      * @notice  the Project Name
@@ -385,6 +438,7 @@ contract Project is Ownable, AccessControl {
         return contributorList.sizeOf();
     }
 
+    /// @notice Get all contributor addresses
     function getAllContributorsAddress() external view returns (address[] memory) {
         address[] memory allContributors = new address[](contributorList.sizeOf());
 
@@ -400,6 +454,17 @@ contract Project is Ownable, AccessControl {
         return allContributors;
     }
 
+    /// @notice Get contributor by address
+    function getContributorByAddress(address _account)
+        external
+        view
+        onlyAdmin
+        returns (Contributor memory)
+    {
+        uint256 id = contributorId[_account];
+        return projectContributors[id];
+    }
+
     /// @notice Return true if the address is a contributor in the project
     function isContributorInProject(address _contributor) public view returns (bool) {
         return contributorId[_contributor] != 0;
@@ -408,6 +473,11 @@ contract Project is Ownable, AccessControl {
     /// @notice Get the participation weight in percent
     function getContributorParticipation(address _contributor) external view returns (uint256) {
         return participationOfContributors[_contributor];
+    }
+
+    /// @notice Returns whether the project is pending or not
+    function isPending() external view returns (bool) {
+        return projectState == PENDING;
     }
 
     /// @notice Returns whether the project is active or not

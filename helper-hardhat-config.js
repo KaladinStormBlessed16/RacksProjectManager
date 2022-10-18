@@ -2,8 +2,8 @@ const networkConfig = {
     31337: {
         name: "localhost",
     },
-    4: {
-        name: "rinkeby",
+    5: {
+        name: "goerli",
     },
     80001: {
         name: "mumbai",
@@ -13,7 +13,7 @@ const networkConfig = {
     },
 };
 
-const developmentChains = ["hardhat", "localhost", "rinkeby"];
+const developmentChains = ["hardhat", "localhost", "goerli"];
 const VERIFICATION_BLOCK_CONFIRMATIONS = 6;
 const backendContractsFile = "../Backend_RacksProjectManager/web3Constants/networkMapping.json";
 const backendAbiLocation = "../Backend_RacksProjectManager/web3Constants/";

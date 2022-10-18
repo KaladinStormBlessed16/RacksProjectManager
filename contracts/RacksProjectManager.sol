@@ -195,6 +195,15 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         contributorsData[_account] = _newData;
     }
 
+    /// Increase Contributor's Reputation Level
+    function increaseContributorLv(address _account, uint256 levels) public onlyAdmin {
+        if (levels <= 0) revert invalidParameterErr();
+        Contributor memory contributor = contributorsData[_account];
+        contributor.reputationLevel += levels;
+        contributor.reputationPoints = 0;
+        contributorsData[_account] = contributor;
+    }
+
     function setIsPaused(bool _newPausedValue) public onlyAdmin {
         paused = _newPausedValue;
     }

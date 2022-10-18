@@ -7,8 +7,7 @@ require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-solhint");
 require("dotenv").config({ path: ".env" });
 
-const RINKEBY_RPC_URL =
-    process.env.RINKEBY_RPC_URL || "https://eth-rinkeby.alchemyapi.io/v2/your-api-key";
+const RPC_URL = process.env.RPC_URL || "https://eth-goerli.alchemyapi.io/v2/your-api-key";
 const POLYGON_MAINNET_RPC_URL = "https://poligon.alchemyapi.io/v2/your-api-key";
 const PRIVATE_KEY =
     process.env.PRIVATE_KEY || "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; //This private key, are publicly known. Is only for testing propuse
@@ -34,10 +33,10 @@ module.exports = {
         hardhat: {
             chainId: 31337,
         },
-        rinkeby: {
-            url: RINKEBY_RPC_URL,
+        goerli: {
+            url: RPC_URL,
             accounts: [PRIVATE_KEY],
-            chainId: 4,
+            chainId: 5,
             blockConfirmations: 6,
         },
         polygon: {

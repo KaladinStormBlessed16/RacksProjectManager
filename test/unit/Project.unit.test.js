@@ -26,6 +26,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
               const projectAddress = await (await racksPM.getProjects())[0];
 
               projectContract = await ethers.getContractAt("Project", projectAddress);
+              await projectContract.approveProject();
 
               await erc20.connect(user1).mintMore();
               await erc20.connect(user2).mintMore();
@@ -110,6 +111,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
+                  await project2Contract.approveProject();
 
                   await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
@@ -310,6 +312,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   const Project2 = await ethers.getContractFactory("Project");
                   let project2Contract = Project2.attach(projectAddress2);
+                  await project2Contract.approveProject();
 
                   await mrc.connect(user3).mint(1);
                   await racksPM.connect(user3).registerContributor();
@@ -333,6 +336,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   );
 
                   expect(await erc20.balanceOf(user3.address)).to.be.equal(9999999900);
+                  expect(await erc20.balanceOf(user2.address)).to.be.equal(10000000065);
+                  expect(await erc20.balanceOf(user1.address)).to.be.equal(10000000035);
 
                   expect(
                       await project2Contract.getContributorParticipation(user3.address)
@@ -352,15 +357,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(pcUser2.wallet).to.be.equal(user2.address);
                   expect(pcUser2.reputationLevel).to.be.equal(4);
                   expect(pcUser2.reputationPoints).to.be.equal(75);
-
-                  expect(await erc20.balanceOf(racksPM.address)).to.be.equal(100);
-                  await racksPM.addAdmin(user1.address);
-                  await expect(
-                      racksPM.connect(user1).withdrawAllFunds(deployer.address)
-                  ).to.be.revertedWith("Ownable: caller is not the owner");
-
-                  await racksPM.withdrawAllFunds(deployer.address);
-                  expect(await erc20.balanceOf(deployer.address)).to.be.equal(100000000100);
               });
               it("Should revert if the smart contract is paused", async () => {
                   await mrc.connect(user1).mint(1);
