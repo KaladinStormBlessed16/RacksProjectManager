@@ -477,7 +477,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   );
                   await expect(
                       projectContract.setMaxContributorsNumber(0)
-                  ).to.be.revertedWithCustomError(projectContract, "projectNoEditableErr");
+                  ).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
 
                   await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
                       projectContract,
@@ -562,6 +562,46 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await projectContract.giveAway();
 
                   expect(await ethers.provider.getBalance(projectContract.address)).to.be.equal(0);
+              });
+          });
+          describe("Fund Project", () => {
+              it("Should revert with invalidParameterErr on project with no contributors", async () => {
+                  await erc20.connect(user2).approve(projectContract.address, 500);
+                  await expect(
+                      projectContract.connect(user2).fundProject(500)
+                  ).to.be.revertedWithCustomError(projectContract, "invalidParameterErr");
+
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+
+                  await expect(
+                      projectContract.connect(user2).fundProject(0)
+                  ).to.be.revertedWithCustomError(projectContract, "invalidParameterErr");
+              });
+
+              it("Should revert with ERC20: insufficient allowance", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+
+                  await expect(projectContract.connect(user2).fundProject(500)).to.be.revertedWith(
+                      "ERC20: insufficient allowance"
+                  );
+              });
+
+              it("Should fund the Project succesfully", async () => {
+                  await mrc.connect(user1).mint(1);
+                  await racksPM.connect(user1).registerContributor();
+                  await erc20.connect(user1).approve(projectContract.address, 100);
+                  await projectContract.connect(user1).registerProjectContributor();
+                  await erc20.connect(user2).approve(projectContract.address, 500);
+                  await projectContract.connect(user2).fundProject(500);
+                  await expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
+                      500
+                  );
               });
           });
       });

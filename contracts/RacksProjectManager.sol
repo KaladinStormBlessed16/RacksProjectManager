@@ -123,15 +123,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         emit newContributorRegistered(msg.sender);
     }
 
-    /**
-     * @notice Used to withdraw All funds
-     * @dev Only owner is able to call this function
-     */
-    function withdrawAllFunds(address _wallet) external onlyOwner isNotPaused {
-        if (erc20.balanceOf(address(this)) <= 0) revert noFundsWithdrawErr();
-        if (!erc20.transfer(_wallet, erc20.balanceOf(address(this)))) revert erc20TransferFailed();
-    }
-
     ////////////////////////
     //  Helper Functions  //
     ////////////////////////

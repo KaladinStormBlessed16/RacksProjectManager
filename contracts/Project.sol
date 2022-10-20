@@ -36,6 +36,7 @@ contract Project is Ownable, AccessControl {
     mapping(uint256 => Contributor) private projectContributors;
     mapping(address => uint256) private contributorId;
     mapping(address => uint256) private participationOfContributors;
+    mapping(address => uint256) private projectFunds;
 
     /// @notice State variables
     string private name;
@@ -198,6 +199,18 @@ contract Project is Ownable, AccessControl {
     }
 
     /**
+     * @notice Fund the project with ERC20
+     * @dev This serves as a reward to contributors
+     */
+    function fundProject(uint256 _amount) external isNotPaused isNotDeleted isNotPending {
+        if (_amount <= 0 || contributorList.sizeOf() < 1) revert invalidParameterErr();
+
+        projectFunds[msg.sender] += _amount;
+        bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), _amount);
+        if (!success) revert erc20TransferFailed();
+    }
+
+    /**
      * @notice Give Away extra rewards
      * @dev Only callable by Admins when the project is completed
      */
@@ -243,31 +256,6 @@ contract Project is Ownable, AccessControl {
                     }("");
                     if (!success) revert transferGiveAwayFailed();
                 }
-                (existNext, i) = contributorList.getNextNode(i);
-            }
-        }
-    }
-
-    /**
-     * @notice Used to give away primitive profits
-     * @dev Only callable by Admins when project completed
-     */
-    function shareProfitsEther() private onlyAdmin {
-        if (projectState != ProjectState.Finished) revert notCompletedErr();
-        if (address(this).balance <= 0) revert noFundsGiveAwayErr();
-        unchecked {
-            uint256 projectBalance = address(this).balance;
-
-            (bool existNext, uint256 i) = contributorList.getNextNode(0);
-
-            while (i != 0 && existNext) {
-                address contrAddress = projectContributors[i].wallet;
-
-                (bool success, ) = contrAddress.call{
-                    value: (projectBalance * participationOfContributors[contrAddress]) / 100
-                }("");
-                if (!success) revert transferGiveAwayFailed();
-
                 (existNext, i) = contributorList.getNextNode(i);
             }
         }
@@ -351,7 +339,7 @@ contract Project is Ownable, AccessControl {
      * @notice  the Project State
      * @dev Only callable by Admins when the project has no Contributor yet and is pending.
      */
-    function approveProject() external onlyAdmin isEditable isNotPaused isNotDeleted {
+    function approveProject() external onlyAdmin isNotPaused isNotDeleted {
         if (projectState == PENDING) projectState = ACTIVE;
     }
 
@@ -401,11 +389,11 @@ contract Project is Ownable, AccessControl {
     function setMaxContributorsNumber(uint256 _maxContributorsNumber)
         external
         onlyAdmin
-        isEditable
         isNotPaused
         isNotDeleted
     {
-        if (_maxContributorsNumber <= 0) revert projectInvalidParameterErr();
+        if (_maxContributorsNumber <= 0 || _maxContributorsNumber < contributorList.sizeOf())
+            revert projectInvalidParameterErr();
         maxContributorsNumber = _maxContributorsNumber;
     }
 
@@ -472,7 +460,13 @@ contract Project is Ownable, AccessControl {
 
     /// @notice Get the participation weight in percent
     function getContributorParticipation(address _contributor) external view returns (uint256) {
+        if (projectState != ProjectState.Finished) revert notCompletedErr();
         return participationOfContributors[_contributor];
+    }
+
+    /// @notice Get the balance of funds given by an address
+    function getAccountFunds(address _account) external view returns (uint256) {
+        return projectFunds[_account];
     }
 
     /// @notice Returns whether the project is pending or not
