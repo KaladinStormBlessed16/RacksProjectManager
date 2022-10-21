@@ -598,7 +598,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await erc20.connect(user1).approve(projectContract.address, 100);
                   await projectContract.connect(user1).registerProjectContributor();
                   await erc20.connect(user2).approve(projectContract.address, 500);
-                  await projectContract.connect(user2).fundProject(500);
+                  const tx = await projectContract.connect(user2).fundProject(500);
+                  const rc = await tx.wait();
+                  const event = rc.events.find((e) => e.event == "projectFunded").args;
+                  await expect(event).to.exist;
                   await expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
                       500
                   );

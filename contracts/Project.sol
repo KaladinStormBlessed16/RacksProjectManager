@@ -90,6 +90,7 @@ contract Project is Ownable, AccessControl {
 
     /// @notice Events
     event newProjectContributorsRegistered(address projectAddress, address newProjectContributor);
+    event projectFunded(address projectAddress, address funderWallet, uint256 amount);
 
     constructor(
         IRacksProjectManager _racksPM,
@@ -206,6 +207,7 @@ contract Project is Ownable, AccessControl {
         if (_amount <= 0 || contributorList.sizeOf() < 1) revert invalidParameterErr();
 
         projectFunds[msg.sender] += _amount;
+        emit projectFunded(address(this), msg.sender, _amount);
         bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), _amount);
         if (!success) revert erc20TransferFailed();
     }
