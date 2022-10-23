@@ -38,7 +38,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     using StructuredLinkedList for StructuredLinkedList.List;
     StructuredLinkedList.List private projectsList;
     mapping(uint256 => Project) private projectStore;
-    Project[] private projectsDeleted;
 
     mapping(address => bool) private walletIsContributor;
     mapping(address => bool) private accountIsBanned;
@@ -255,7 +254,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return filteredProjects;
     }
 
-    function getAllProjects() public view returns (Project[] memory) {
+    function getAllProjects() private view returns (Project[] memory) {
         Project[] memory allProjects = new Project[](projectsList.sizeOf());
 
         uint256 j = 0;
@@ -268,10 +267,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         }
 
         return allProjects;
-    }
-
-    function getProjectsDeleted() public view returns (Project[] memory) {
-        return projectsDeleted;
     }
 
     /// @notice Get Contributor by index
@@ -323,6 +318,5 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
         projectId[msg.sender] = 0;
         projectsList.remove(id);
-        projectsDeleted.push(Project(payable(msg.sender)));
     }
 }

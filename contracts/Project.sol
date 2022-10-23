@@ -471,6 +471,15 @@ contract Project is Ownable, AccessControl {
         return projectFunds[_account];
     }
 
+    /// @notice Get the balance of funds given by an address
+    function getProjectFunds() external view returns (uint256) {
+        uint256 projectBalanceERC20 = racksPM_ERC20.balanceOf(address(this));
+
+        if (projectState != FINISHED && contributorList.sizeOf() > 0)
+            projectBalanceERC20 -= colateralCost * contributorList.sizeOf();
+        return projectBalanceERC20;
+    }
+
     /// @notice Returns whether the project is pending or not
     function isPending() external view returns (bool) {
         return projectState == PENDING;

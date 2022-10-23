@@ -22,7 +22,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
               const erc20Contract = await ethers.getContract("MockErc20");
               erc20 = await erc20Contract.connect(deployer);
 
-              const tx = await racksPM.createProject("Project1", 100, 1, 2);
+              const tx = await racksPM.createProject(
+                  "Project1",
+                  ethers.utils.parseEther("100"),
+                  1,
+                  2
+              );
               const rc = await tx.wait();
               const { newProjectAddress } = rc.events.find(
                   (e) => e.event == "newProjectCreated"
@@ -39,17 +44,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
           describe("Setup", () => {
               it("Should mint ERC20 and MRC", async () => {
                   let balanceOf = await erc20.balanceOf(deployer.address);
-                  assert(
-                      balanceOf == 100000000000,
-                      `Balance is ${balanceOf} and should be 100000000000`
-                  );
+                  await expect(balanceOf).to.be.equal(ethers.utils.parseEther("10000"));
 
                   await erc20.connect(user1).mintMore();
                   balanceOf = await erc20.balanceOf(user1.address);
-                  assert(
-                      balanceOf == 10000000000,
-                      `Balance is ${balanceOf} and should be 10000000000`
-                  );
+                  await expect(balanceOf).to.be.equal(ethers.utils.parseEther("10000"));
 
                   await mrc.connect(user1).mint(1);
                   assert((await mrc.balanceOf(user1.address)) == 1);
@@ -59,7 +58,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
           describe("Create Project", () => {
               it("Should revert with adminErr", async () => {
                   await expect(
-                      racksPM.connect(user1).createProject("Project2", 100, 1, 2)
+                      racksPM
+                          .connect(user1)
+                          .createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
               });
 
@@ -69,17 +70,16 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
 
                   await expect(
-                      racksPM.createProject("Project2", 100, 0, 2)
+                      racksPM.createProject("Project2", ethers.utils.parseEther("100"), 0, 2)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
 
                   await expect(
-                      racksPM.createProject("Project2", 100, 1, 0)
+                      racksPM.createProject("Project2", ethers.utils.parseEther("100"), 1, 0)
                   ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
 
-                  await expect(racksPM.createProject("", 100, 1, 3)).to.be.revertedWithCustomError(
-                      racksPM,
-                      "projectInvalidParameterErr"
-                  );
+                  await expect(
+                      racksPM.createProject("", ethers.utils.parseEther("100"), 1, 3)
+                  ).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
               });
 
               it("Should create project and then deleted correctly", async () => {
@@ -87,7 +87,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await racksPM.isAdmin(user1.address)).to.be.true;
                   expect(await racksPM.isAdmin(user2.address)).to.be.false;
 
-                  const tx = await racksPM.connect(user1).createProject("Project2", 100, 1, 2);
+                  const tx = await racksPM
+                      .connect(user1)
+                      .createProject("Project2", ethers.utils.parseEther("100"), 1, 2);
                   const rc = await tx.wait();
                   const { newProjectAddress: project2Address } = rc.events.find(
                       (e) => e.event == "newProjectCreated"
@@ -100,10 +102,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   await racksPM.removeAdmin(user1.address);
                   await expect(
-                      racksPM.connect(user1).createProject("Project3", 100, 1, 2)
+                      racksPM
+                          .connect(user1)
+                          .createProject("Project3", ethers.utils.parseEther("100"), 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "adminErr");
 
-                  let projects = await racksPM.getAllProjects();
+                  let projects = await racksPM.getProjects();
                   expect(projects).to.have.same.members([project1.address, project2.address]);
 
                   expect(await project2.isActive()).to.be.true;
@@ -114,11 +118,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   expect(await project2.isActive()).to.be.false;
                   expect(await project2.isDeleted()).to.be.true;
 
-                  projects = await racksPM.getAllProjects();
+                  projects = await racksPM.getProjects();
                   expect(projects).to.have.same.members([project1.address]);
-
-                  const projectsDeleted = await racksPM.getProjectsDeleted();
-                  expect(projectsDeleted).to.have.same.members([project2.address]);
               });
 
               it("Should revert if the smart contract is paused", async () => {
@@ -126,7 +127,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
                   await racksPM.addAdmin(user1.address);
                   await expect(
-                      racksPM.connect(user1).createProject("Project2", 100, 1, 2)
+                      racksPM
+                          .connect(user1)
+                          .createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
                   ).to.be.revertedWithCustomError(racksPM, "pausedErr");
               });
           });
@@ -173,8 +176,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retieve only Lv1 Projects called by a Holder", async () => {
-                  await racksPM.createProject("Project2", 100, 2, 2);
-                  await racksPM.createProject("Project3", 100, 3, 2);
+                  await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 2);
+                  await racksPM.createProject("Project3", ethers.utils.parseEther("100"), 3, 2);
 
                   await mrc.connect(user1).mint(1);
                   const projects = await racksPM.connect(user1).getProjects();
@@ -185,8 +188,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retrieve only Lv2 or less Projects called by a Contributor", async () => {
-                  await racksPM.createProject("Project2", 100, 2, 2);
-                  await racksPM.createProject("Project3", 100, 3, 2);
+                  await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 2);
+                  await racksPM.createProject("Project3", ethers.utils.parseEther("100"), 3, 2);
 
                   await mrc.connect(user1).mint(1);
                   await racksPM.connect(user1).registerContributor();
@@ -207,8 +210,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               });
 
               it("Should retrieve all Projects called by an Admin", async () => {
-                  await racksPM.createProject("Project2", 100, 2, 2);
-                  await racksPM.createProject("Project3", 100, 3, 2);
+                  await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 2);
+                  await racksPM.createProject("Project3", ethers.utils.parseEther("100"), 3, 2);
 
                   const projects = await racksPM.getProjects();
                   assert.lengthOf(
