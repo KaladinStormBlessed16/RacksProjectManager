@@ -1,5 +1,9 @@
 const { network } = require("hardhat");
-const { developmentChains, VERIFICATION_BLOCK_CONFIRMATIONS } = require("../helper-hardhat-config");
+const {
+    developmentChains,
+    deploymentChains,
+    VERIFICATION_BLOCK_CONFIRMATIONS,
+} = require("../helper-hardhat-config");
 const { verify } = require("../utils/verify");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
@@ -28,8 +32,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         waitConfirmations: waitBlockConfirmations,
     });
 
-    // Verify the deployment
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    if (deploymentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         log("Verifying...");
         await verify(racksProjectManager.address, arguments);
     }
