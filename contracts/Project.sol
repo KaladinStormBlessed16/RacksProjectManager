@@ -43,6 +43,7 @@ contract Project is Ownable, AccessControl {
     uint256 private colateralCost;
     uint256 private reputationLevel;
     uint256 private maxContributorsNumber;
+    uint256 private totalAmountFunded;
     ProjectState private projectState;
     IERC20 private immutable racksPM_ERC20;
 
@@ -206,6 +207,7 @@ contract Project is Ownable, AccessControl {
     function fundProject(uint256 _amount) external isNotPaused isNotDeleted isNotPending {
         if (_amount <= 0 || contributorList.sizeOf() < 1) revert invalidParameterErr();
 
+        totalAmountFunded += _amount;
         projectFunds[msg.sender] += _amount;
         emit projectFunded(address(this), msg.sender, _amount);
         bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), _amount);
@@ -426,6 +428,11 @@ contract Project is Ownable, AccessControl {
     /// @notice Get total number of contributors
     function getNumberOfContributors() external view returns (uint256) {
         return contributorList.sizeOf();
+    }
+
+    /// @notice Get total amount of funds a Project got since creation
+    function getTotalAmountFunded() external view returns (uint256) {
+        return totalAmountFunded;
     }
 
     /// @notice Get all contributor addresses
