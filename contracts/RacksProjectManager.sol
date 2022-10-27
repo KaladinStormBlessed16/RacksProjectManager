@@ -22,7 +22,7 @@ import "./library/StructuredLinkedList.sol";
 // ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
 //                        ▜██████▙            ▟██████▛          ┌────────┐
 //                          ▜██████▙        ▟██████▛            │  LABS  │
-//                                                              └────────┘
+//                                                                 └────────┘
 
 contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     /// @notice tokens
