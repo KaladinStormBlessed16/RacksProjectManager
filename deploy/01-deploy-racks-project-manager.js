@@ -24,7 +24,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         MockErc20Address = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
     }
     log("----------------------------------------------------");
-    const arguments = [MRCAddress, MockErc20Address];
+    const holderValidation = await deploy("HolderValidation", {
+        from: deployer,
+        args: [MRCAddress],
+        log: true,
+        waitConfirmations: waitBlockConfirmations,
+    });
+    const arguments = [holderValidation.address, MockErc20Address];
     const racksProjectManager = await deploy("RacksProjectManager", {
         from: deployer,
         args: arguments,
@@ -34,6 +40,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
     if (deploymentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         log("Verifying...");
+        await verify(holderValidation.address, [MRCAddress]);
         await verify(racksProjectManager.address, arguments);
     }
     log("----------------------------------------------------");

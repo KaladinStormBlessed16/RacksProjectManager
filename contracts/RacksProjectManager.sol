@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IRacksProjectManager.sol";
-import "./interfaces/IMRC.sol";
+import "./interfaces/IHolderValidation.sol";
 import "./Project.sol";
 import "./Contributor.sol";
 import "./Err.sol";
@@ -26,7 +26,7 @@ import "./library/StructuredLinkedList.sol";
 
 contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     /// @notice tokens
-    IMRC private immutable mrc;
+    IHolderValidation private immutable holderValidation;
     IERC20 private erc20;
 
     /// @notice State variables
@@ -52,7 +52,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @notice Check that user is Holder or Admin
     modifier onlyHolder() {
-        if (mrc.balanceOf(msg.sender) < 1 && !hasRole(ADMIN_ROLE, msg.sender)) revert holderErr();
+        if (!isHolder(msg.sender) && !hasRole(ADMIN_ROLE, msg.sender)) revert holderErr();
         _;
     }
 
@@ -65,9 +65,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     ///////////////////
     //  Constructor  //
     ///////////////////
-    constructor(IMRC _mrc, IERC20 _erc20) {
+    constructor(IHolderValidation _holderValidation, IERC20 _erc20) {
         erc20 = _erc20;
-        mrc = _mrc;
+        holderValidation = _holderValidation;
         _setupRole(ADMIN_ROLE, msg.sender);
     }
 
@@ -207,9 +207,19 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         return hasRole(ADMIN_ROLE, _account);
     }
 
-    /// @notice Returns MRC address
-    function getMRCInterface() external view returns (IMRC) {
-        return mrc;
+    /// Get whether a wallet is holder of at least one authorized collection
+    function isHolder(address _account) public view returns (bool) {
+        return holderValidation.isHolder(_account) != address(0);
+    }
+
+    /// Get the collection's address of a holder
+    function getCollectionAddressOfHolder(address _account) external view returns (address) {
+        return holderValidation.isHolder(_account);
+    }
+
+    /// @notice Returns Holder Validation contract address
+    function getHolderValidationInterface() external view returns (IHolderValidation) {
+        return holderValidation;
     }
 
     /// @inheritdoc IRacksProjectManager

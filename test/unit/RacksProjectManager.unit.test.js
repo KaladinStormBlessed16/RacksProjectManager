@@ -5,7 +5,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Racks Project Manager Unit Tests", function () {
-          let racksPM, mrc, erc20, deployer, user1, user2, project1;
+          let racksPM, mrc, erc20, deployer, user1, user2, project1, holderValidation;
 
           beforeEach(async () => {
               accounts = await ethers.getSigners(); // could also do with getNamedAccounts
@@ -37,8 +37,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
               project1 = await project1.connect(deployer);
               await project1.approveProject();
 
-              const mrcAddress = await racksPMContract.getMRCInterface();
-              assert.equal(mrcAddress, mrcContract.address);
+              const holderValAddress = await racksPM.getHolderValidationInterface();
+              holderValidation = await ethers.getContractAt("HolderValidation", holderValAddress);
           });
 
           describe("Setup", () => {
@@ -143,6 +143,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
               it("Should revert with projectInvalidParameterErr", async () => {
                   await mrc.connect(user1).mint(1);
+                  const add = await racksPM.getCollectionAddressOfHolder(user1.address);
                   await racksPM.connect(user1).registerContributor();
                   await expect(
                       racksPM.connect(user1).registerContributor()
@@ -218,6 +219,47 @@ const { developmentChains } = require("../../helper-hardhat-config");
                       projects.filter((p) => p !== ethers.constants.AddressZero),
                       3
                   );
+              });
+          });
+
+          describe("Holder Validation", () => {
+              it("Add Collection Should revert with Ownable Error", async () => {
+                  await expect(
+                      holderValidation.connect(user1).addCollection(mrc.address)
+                  ).to.be.revertedWith("Ownable: caller is not the owner");
+              });
+
+              it("Delete Collection Should revert with Ownable Error", async () => {
+                  await expect(
+                      holderValidation.connect(user1).deleteCollection(mrc.address)
+                  ).to.be.revertedWith("Ownable: caller is not the owner");
+              });
+
+              it("Should add collection succesfully", async () => {
+                  await holderValidation.addCollection(user1.address);
+                  assert.lengthOf(await holderValidation.getAllCollections(), 2);
+              });
+
+              it("Should delete 1 collection succesfully", async () => {
+                  await holderValidation.deleteCollection(mrc.address);
+                  assert.lengthOf(await holderValidation.getAllCollections(), 0);
+              });
+
+              it("Should delete collections succesfully", async () => {
+                  await holderValidation.addCollection(user1.address);
+                  await holderValidation.deleteCollection(user1.address);
+                  assert.lengthOf(await holderValidation.getAllCollections(), 1);
+                  await holderValidation.deleteCollection(mrc.address);
+                  assert.lengthOf(await holderValidation.getAllCollections(), 0);
+              });
+
+              it("Should return false if User is not a holder", async () => {
+                  expect(await racksPM.isHolder(user1.address)).to.be.false;
+              });
+
+              it("Should return true if User is a holder", async () => {
+                  await mrc.connect(user1).mint(1);
+                  expect(await racksPM.isHolder(user1.address)).to.be.true;
               });
           });
       });

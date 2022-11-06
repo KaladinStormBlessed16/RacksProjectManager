@@ -11,6 +11,11 @@ const path = require("path");
 const { network } = require("hardhat");
 
 module.exports = async () => {
+    const chainId = network.config.chainId.toString();
+    if (chainId === "31337") {
+        console.log("Local Deployment...");
+        return;
+    }
     console.log("Exporting addresses and abi...");
     await updateContractAddresses();
     await updateAbi();
@@ -19,6 +24,7 @@ module.exports = async () => {
 
 async function updateAbi() {
     const chainId = network.config.chainId.toString();
+
     const racksProjectManager = await ethers.getContract("RacksProjectManager");
     fs.writeFileSync(
         `${backendAbiLocation}${networkConfig[chainId].name}/RacksProjectManager.json`,
@@ -63,14 +69,14 @@ async function updateAbi() {
 async function updateContractAddresses() {
     const chainId = network.config.chainId.toString();
     const racksProjectManager = await ethers.getContract("RacksProjectManager");
-    const MRCAddress = await racksProjectManager.getMRCInterface();
-    const MockErc20Address = await racksProjectManager.getERC20Interface();
+    const MRCAddress = (await ethers.getContract("MRCRYPTO")).address;
+    const MockErc20Address = (await ethers.getContract("MockErc20")).address;
     const contractAddresses = JSON.parse(fs.readFileSync(backendContractsFile, "utf8"));
 
     contractAddresses[chainId] = {
-        RacksProjectManager: [racksProjectManager.address],
-        MRCRYPTO: [MRCAddress],
-        MockErc20: [MockErc20Address],
+        RacksProjectManager: racksProjectManager.address,
+        MRCRYPTO: MRCAddress,
+        MockErc20: MockErc20Address,
     };
 
     fs.writeFileSync(backendContractsFile, JSON.stringify(contractAddresses));
