@@ -1,8 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IRacksProjectManager.sol";
 import "./interfaces/IHolderValidation.sol";
@@ -24,8 +25,13 @@ import "./library/StructuredLinkedList.sol";
 //                          ▜██████▙        ▟██████▛            │  LABS  │
 //                                                                 └────────┘
 
-contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
-    /// @notice tokens
+contract RacksProjectManager is
+    IRacksProjectManager,
+    Initializable,
+    OwnableUpgradeable,
+    AccessControlUpgradeable
+{
+    /// @notice interfaces
     IHolderValidation private immutable holderValidation;
     IERC20 private erc20;
 
@@ -39,7 +45,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     StructuredLinkedList.List private projectsList;
     mapping(uint256 => Project) private projectStore;
 
-    mapping(address => bool) private walletIsContributor;
     mapping(address => bool) private accountIsBanned;
     mapping(address => uint256) private projectId;
     mapping(address => Contributor) private contributorsData;
@@ -52,7 +57,8 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @notice Check that user is Holder or Admin
     modifier onlyHolder() {
-        if (!isHolder(msg.sender) && !hasRole(ADMIN_ROLE, msg.sender)) revert holderErr();
+        if (holderValidation.isHolder(msg.sender) == address(0) && !hasRole(ADMIN_ROLE, msg.sender))
+            revert holderErr();
         _;
     }
 
@@ -63,11 +69,19 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     }
 
     ///////////////////
-    //  Constructor  //
+    //   Constructor //
     ///////////////////
-    constructor(IHolderValidation _holderValidation, IERC20 _erc20) {
-        erc20 = _erc20;
+    constructor(IHolderValidation _holderValidation) {
         holderValidation = _holderValidation;
+    }
+
+    ///////////////////
+    //   Initialize  //
+    ///////////////////
+    function initialize(IERC20 _erc20) external initializer {
+        erc20 = _erc20;
+        __Ownable_init();
+        __AccessControl_init();
         _setupRole(ADMIN_ROLE, msg.sender);
     }
 
@@ -114,10 +128,9 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
      * @dev Only callable by Holders who are not already Contributors
      */
     function registerContributor() external onlyHolder isNotPaused {
-        if (walletIsContributor[msg.sender]) revert contributorAlreadyExistsErr();
+        if (isWalletContributor(msg.sender)) revert contributorAlreadyExistsErr();
 
         contributors.push(msg.sender);
-        walletIsContributor[msg.sender] = true;
         contributorsData[msg.sender] = Contributor(msg.sender, 1, 0, false);
         emit newContributorRegistered(msg.sender);
     }
@@ -166,22 +179,19 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
             while (i != 0 && existNext) {
                 Project project = projectStore[i];
-
                 if (project.isActive() && project.isContributorInProject(_account)) {
                     project.removeContributor(_account, false);
                 }
-
                 (existNext, i) = projectsList.getNextNode(i);
             }
         }
     }
 
     /// @inheritdoc IRacksProjectManager
-    function setAccountToContributorData(address _account, Contributor memory _newData)
-        public
-        override
-        onlyAdmin
-    {
+    function setAccountToContributorData(
+        address _account,
+        Contributor memory _newData
+    ) public override onlyAdmin {
         contributorsData[_account] = _newData;
     }
 
@@ -205,11 +215,6 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
     /// @inheritdoc IRacksProjectManager
     function isAdmin(address _account) public view override returns (bool) {
         return hasRole(ADMIN_ROLE, _account);
-    }
-
-    /// Get whether a wallet is holder of at least one authorized collection
-    function isHolder(address _account) public view returns (bool) {
-        return holderValidation.isHolder(_account) != address(0);
     }
 
     /// Get the collection's address of a holder
@@ -246,7 +251,7 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
         Project[] memory filteredProjects = new Project[](projectsList.sizeOf());
 
         unchecked {
-            uint256 callerReputationLv = walletIsContributor[msg.sender]
+            uint256 callerReputationLv = isWalletContributor(msg.sender)
                 ? contributorsData[msg.sender].reputationLevel
                 : 1;
             uint256 j = 0;
@@ -286,25 +291,14 @@ contract RacksProjectManager is IRacksProjectManager, Ownable, AccessControl {
 
     /// @inheritdoc IRacksProjectManager
     function isWalletContributor(address _account) public view override returns (bool) {
-        return walletIsContributor[_account];
+        return contributorsData[_account].wallet != address(0);
     }
 
     /// @inheritdoc IRacksProjectManager
-    function getContributorData(address _account)
-        public
-        view
-        override
-        returns (Contributor memory)
-    {
+    function getContributorData(
+        address _account
+    ) public view override returns (Contributor memory) {
         return contributorsData[_account];
-    }
-
-    /**
-     * @notice Get total number of projects
-     * @dev Only callable by Holders
-     */
-    function getNumberOfProjects() external view onlyHolder returns (uint256) {
-        return projectsList.sizeOf();
     }
 
     /**

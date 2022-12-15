@@ -98,7 +98,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
                   await project2.approveProject();
 
                   assert.lengthOf(await racksPM.getProjects(), 2);
-                  assert.equal(await racksPM.getNumberOfProjects(), 2);
 
                   await racksPM.removeAdmin(user1.address);
                   await expect(

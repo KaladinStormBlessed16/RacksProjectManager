@@ -285,14 +285,12 @@ contract Project is Ownable, AccessControl {
      * @notice Increase Contributor's reputation
      * @dev Only callable by Admins internally
      */
-    function increaseContributorReputation(uint256 _reputationPointsReward, uint256 _index)
-        private
-        onlyAdmin
-        isNotDeleted
-    {
+    function increaseContributorReputation(
+        uint256 _reputationPointsReward,
+        uint256 _index
+    ) private onlyAdmin isNotDeleted {
         unchecked {
             Contributor memory _contributor = projectContributors[_index];
-
             uint256 grossReputationPoints = _contributor.reputationPoints + _reputationPointsReward;
 
             while (grossReputationPoints >= (_contributor.reputationLevel * 100)) {
@@ -300,7 +298,6 @@ contract Project is Ownable, AccessControl {
                 _contributor.reputationLevel++;
             }
             _contributor.reputationPoints = grossReputationPoints;
-
             projectContributors[_index] = _contributor;
         }
     }
@@ -314,17 +311,14 @@ contract Project is Ownable, AccessControl {
 
     function deleteProject() public onlyAdmin isNotDeleted isEditable {
         projectState = DELETED;
-
         racksPM.deleteProject();
     }
 
-    function removeContributor(address _contributor, bool _returnColateral)
-        public
-        onlyAdmin
-        isNotDeleted
-    {
+    function removeContributor(
+        address _contributor,
+        bool _returnColateral
+    ) public onlyAdmin isNotDeleted {
         if (!isContributorInProject(_contributor)) revert contributorErr();
-
         uint256 id = contributorId[_contributor];
         contributorId[_contributor] = 0;
         contributorList.remove(id);
@@ -360,13 +354,9 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Colateral Cost
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setColateralCost(uint256 _colateralCost)
-        external
-        onlyAdmin
-        isEditable
-        isNotPaused
-        isNotDeleted
-    {
+    function setColateralCost(
+        uint256 _colateralCost
+    ) external onlyAdmin isEditable isNotPaused isNotDeleted {
         if (_colateralCost <= 0) revert projectInvalidParameterErr();
         colateralCost = _colateralCost;
     }
@@ -375,13 +365,9 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Reputation Level
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setReputationLevel(uint256 _reputationLevel)
-        external
-        onlyAdmin
-        isEditable
-        isNotPaused
-        isNotDeleted
-    {
+    function setReputationLevel(
+        uint256 _reputationLevel
+    ) external onlyAdmin isEditable isNotPaused isNotDeleted {
         if (_reputationLevel <= 0) revert projectInvalidParameterErr();
         reputationLevel = _reputationLevel;
     }
@@ -390,12 +376,9 @@ contract Project is Ownable, AccessControl {
      * @notice Edit the Reputation Level
      * @dev Only callable by Admins when the project has no Contributor yet.
      */
-    function setMaxContributorsNumber(uint256 _maxContributorsNumber)
-        external
-        onlyAdmin
-        isNotPaused
-        isNotDeleted
-    {
+    function setMaxContributorsNumber(
+        uint256 _maxContributorsNumber
+    ) external onlyAdmin isNotPaused isNotDeleted {
         if (_maxContributorsNumber <= 0 || _maxContributorsNumber < contributorList.sizeOf())
             revert projectInvalidParameterErr();
         maxContributorsNumber = _maxContributorsNumber;
@@ -452,12 +435,9 @@ contract Project is Ownable, AccessControl {
     }
 
     /// @notice Get contributor by address
-    function getContributorByAddress(address _account)
-        external
-        view
-        onlyAdmin
-        returns (Contributor memory)
-    {
+    function getContributorByAddress(
+        address _account
+    ) external view onlyAdmin returns (Contributor memory) {
         uint256 id = contributorId[_account];
         return projectContributors[id];
     }
@@ -506,6 +486,4 @@ contract Project is Ownable, AccessControl {
     function isDeleted() external view returns (bool) {
         return projectState == DELETED;
     }
-
-    receive() external payable {}
 }
