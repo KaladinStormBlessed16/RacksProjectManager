@@ -24,51 +24,44 @@ module.exports = async () => {
 
 async function updateAbi() {
 	const chainId = network.config.chainId.toString();
+	const paths = [backendAbiLocation, frontendAbiLocation];
 
-	const racksProjectManager = await ethers.getContract("RacksProjectManager");
-	fs.writeFileSync(
-		`${backendAbiLocation}${networkConfig[chainId].name}/RacksProjectManager.json`,
-		racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
-	);
-	fs.writeFileSync(
-		`${frontendAbiLocation}${networkConfig[chainId].name}/RacksProjectManager.json`,
-		racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
-	);
+	for (let path of paths) {
+		const racksProjectManager = await ethers.getContract("RacksProjectManager");
+		fs.writeFileSync(
+			`${path}${networkConfig[chainId].name}/RacksProjectManager.json`,
+			racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
+		);
 
-	const mrCrypto = await ethers.getContract("MRCRYPTO");
-	fs.writeFileSync(
-		`${backendAbiLocation}${networkConfig[chainId].name}/MRCRYPTO.json`,
-		mrCrypto.interface.format(ethers.utils.FormatTypes.json)
-	);
-	fs.writeFileSync(
-		`${frontendAbiLocation}${networkConfig[chainId].name}/MRCRYPTO.json`,
-		mrCrypto.interface.format(ethers.utils.FormatTypes.json)
-	);
+		const holderValidation = await ethers.getContract("HolderValidation");
+		fs.writeFileSync(
+			`${path}${networkConfig[chainId].name}/HolderValidation.json`,
+			holderValidation.interface.format(ethers.utils.FormatTypes.json)
+		);
 
-	const mockErc20 = await ethers.getContract("MockErc20");
-	fs.writeFileSync(
-		`${backendAbiLocation}${networkConfig[chainId].name}/MockErc20.json`,
-		mockErc20.interface.format(ethers.utils.FormatTypes.json)
-	);
-	fs.writeFileSync(
-		`${frontendAbiLocation}${networkConfig[chainId].name}/MockErc20.json`,
-		mockErc20.interface.format(ethers.utils.FormatTypes.json)
-	);
+		const mrCrypto = await ethers.getContract("MRCRYPTO");
+		fs.writeFileSync(
+			`${path}${networkConfig[chainId].name}/MRCRYPTO.json`,
+			mrCrypto.interface.format(ethers.utils.FormatTypes.json)
+		);
 
-	const project = await ethers.getContractFactory("Project");
-	fs.writeFileSync(
-		`${backendAbiLocation}${networkConfig[chainId].name}/Project.json`,
-		project.interface.format(ethers.utils.FormatTypes.json)
-	);
-	fs.writeFileSync(
-		`${frontendAbiLocation}${networkConfig[chainId].name}/Project.json`,
-		project.interface.format(ethers.utils.FormatTypes.json)
-	);
+		const mockErc20 = await ethers.getContract("MockErc20");
+		fs.writeFileSync(
+			`${path}${networkConfig[chainId].name}/MockErc20.json`,
+			mockErc20.interface.format(ethers.utils.FormatTypes.json)
+		);
+
+		const project = await ethers.getContractFactory("Project");
+		fs.writeFileSync(
+			`${path}${networkConfig[chainId].name}/Project.json`,
+			project.interface.format(ethers.utils.FormatTypes.json)
+		);
+	}
 }
 
 async function updateContractAddresses() {
 	const chainId = network.config.chainId.toString();
-	const racksProjectManager = await ethers.getContract("RacksProjectManager");
+	const racksProjectManager = await ethers.getContract("TransparentUpgradeableProxy");
 	const MRCAddress = (await ethers.getContract("MRCRYPTO")).address;
 	const MockErc20Address = (await ethers.getContract("MockErc20")).address;
 	const contractAddresses = JSON.parse(fs.readFileSync(backendContractsFile, "utf8"));

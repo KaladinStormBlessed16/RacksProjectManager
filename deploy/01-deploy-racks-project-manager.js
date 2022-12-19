@@ -51,12 +51,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 	});
 	const RacksPMContract = await ethers.getContract("RacksProjectManager");
 	const racksPM = await RacksPMContract.attach(transparentUpgradeableProxy.address);
-	await racksPM.initialize(Erc20Address);
+	const owner = await racksPM.getRacksPMOwner();
+	if (owner == ethers.constants.AddressZero) await racksPM.initialize(Erc20Address);
 
 	if (deploymentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
 		log("Verifying...");
 		await verify(holderValidation.address, [MRCAddress]);
-		await verify(racksProjectManager.address, holderValidation.address);
+		await verify(racksProjectManager.address, [holderValidation.address]);
 		await verify(proxyAdmin.address, []);
 		await verify(transparentUpgradeableProxy.address, proxyArguments);
 	}
