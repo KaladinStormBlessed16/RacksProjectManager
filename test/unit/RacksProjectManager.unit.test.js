@@ -114,7 +114,45 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					expect(await project2.isActive()).to.be.true;
 					expect(await project2.isDeleted()).to.be.false;
 
+					await mrc.connect(user1).mint(1);
+					await erc20.connect(user1).mintMore();
+					await racksPM.connect(user1).registerContributor();
+					await erc20
+						.connect(user1)
+						.approve(project2.address, ethers.utils.parseEther("100"));
+					await project2.connect(user1).registerProjectContributor();
+
+					await erc20.connect(user2).mintMore();
+					await erc20
+						.connect(user2)
+						.approve(project2.address, ethers.utils.parseEther("500"));
+					const fundTx = await project2
+						.connect(user2)
+						.fundProject(ethers.utils.parseEther("500"));
+
+					await expect(await project2.getAccountFunds(user2.address)).to.be.equal(
+						ethers.utils.parseEther("500")
+					);
+					await expect(await project2.getTotalAmountFunded()).to.be.equal(
+						ethers.utils.parseEther("500")
+					);
+					let balanceBefore = await erc20.balanceOf(user2.address);
+					await expect(balanceBefore).to.be.equal(ethers.utils.parseEther("9500"));
+
+					await project2.removeContributor(user1.address, true);
+
+					await fundTx.wait();
+
 					await project2.deleteProject();
+
+					await expect(await project2.getAccountFunds(user2.address)).to.be.equal(
+						ethers.utils.parseEther("0")
+					);
+					await expect(await project2.getTotalAmountFunded()).to.be.equal(
+						ethers.utils.parseEther("0")
+					);
+					let balanceAfter = await erc20.balanceOf(user2.address);
+					await expect(balanceAfter).to.be.equal(ethers.utils.parseEther("10000"));
 
 					expect(await project2.isActive()).to.be.false;
 					expect(await project2.isDeleted()).to.be.true;
@@ -142,9 +180,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					).to.be.revertedWithCustomError(racksPM, "holderErr");
 				});
 
-				it("Should revert with projectInvalidParameterErr", async () => {
+				it("Should revert with contributorAlreadyExistsErr", async () => {
 					await mrc.connect(user1).mint(1);
-					const add = await racksPM.getCollectionAddressOfHolder(user1.address);
 					await racksPM.connect(user1).registerContributor();
 					await expect(
 						racksPM.connect(user1).registerContributor()

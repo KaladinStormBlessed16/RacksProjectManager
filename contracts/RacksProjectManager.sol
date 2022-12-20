@@ -137,9 +137,9 @@ contract RacksProjectManager is
 		emit newContributorRegistered(msg.sender);
 	}
 
-	////////////////////////
-	//  Helper Functions  //
-	////////////////////////
+	///////////////////////
+	//  Setter Functions //
+	///////////////////////
 
 	/**
 	 * @notice Set new Admin
@@ -156,10 +156,6 @@ contract RacksProjectManager is
 	function removeAdmin(address _account) external virtual onlyOwner {
 		revokeRole(ADMIN_ROLE, _account);
 	}
-
-	///////////////////////
-	//  Setter Functions //
-	///////////////////////
 
 	/**
 	 * @notice Set new ERC20 Token
@@ -217,11 +213,6 @@ contract RacksProjectManager is
 	/// @inheritdoc IRacksProjectManager
 	function isAdmin(address _account) public view override returns (bool) {
 		return hasRole(ADMIN_ROLE, _account);
-	}
-
-	/// Get the collection's address of a holder
-	function getCollectionAddressOfHolder(address _account) external view returns (address) {
-		return holderValidation.isHolder(_account);
 	}
 
 	/// @notice Returns Holder Validation contract address
@@ -320,7 +311,7 @@ contract RacksProjectManager is
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
-		require(id != 0);
+		require(id > 0);
 
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);

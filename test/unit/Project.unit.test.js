@@ -695,7 +695,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
-					await expect(await projectContract.getProjectFunds()).to.be.equal(
+					await expect(await projectContract.getTotalAmountFunded()).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
 				});

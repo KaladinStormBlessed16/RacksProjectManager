@@ -44,6 +44,7 @@ contract Project is Ownable, AccessControl {
 	uint256 private reputationLevel;
 	uint256 private maxContributorsNumber;
 	uint256 private totalAmountFunded;
+	address[] public funders;
 	ProjectState private projectState;
 	IERC20 private immutable racksPM_ERC20;
 
@@ -209,6 +210,7 @@ contract Project is Ownable, AccessControl {
 
 		totalAmountFunded += _amount;
 		projectFunds[msg.sender] += _amount;
+		funders.push(msg.sender);
 		emit projectFunded(address(this), msg.sender, _amount);
 		bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), _amount);
 		if (!success) revert erc20TransferFailed();
@@ -266,22 +268,6 @@ contract Project is Ownable, AccessControl {
 	}
 
 	/**
-	 * @notice Set new Admin
-	 * @dev Only callable by the Admin
-	 */
-	function addAdmin(address _newAdmin) external onlyOwner isNotDeleted {
-		grantRole(ADMIN_ROLE, _newAdmin);
-	}
-
-	/**
-	 * @notice Remove an account from the user role
-	 * @dev Only callable by the Admin
-	 */
-	function removeAdmin(address _account) external virtual onlyOwner isNotDeleted {
-		revokeRole(ADMIN_ROLE, _account);
-	}
-
-	/**
 	 * @notice Increase Contributor's reputation
 	 * @dev Only callable by Admins internally
 	 */
@@ -312,6 +298,20 @@ contract Project is Ownable, AccessControl {
 	function deleteProject() public onlyAdmin isNotDeleted isEditable {
 		projectState = DELETED;
 		racksPM.deleteProject();
+		if (racksPM_ERC20.balanceOf(address(this)) > 0) {
+			unchecked {
+				for (uint256 i = 0; i < funders.length; i++) {
+					address funder = funders[i];
+					uint256 amount = projectFunds[funder];
+					if (amount > 0) {
+						projectFunds[funder] = 0;
+						totalAmountFunded -= amount;
+						bool successTransfer = racksPM_ERC20.transfer(funder, amount);
+						if (!successTransfer) revert erc20TransferFailed();
+					}
+				}
+			}
+		}
 	}
 
 	function removeContributor(
@@ -413,11 +413,6 @@ contract Project is Ownable, AccessControl {
 		return contributorList.sizeOf();
 	}
 
-	/// @notice Get total amount of funds a Project got since creation
-	function getTotalAmountFunded() external view returns (uint256) {
-		return totalAmountFunded;
-	}
-
 	/// @notice Get all contributor addresses
 	function getAllContributorsAddress() external view returns (address[] memory) {
 		address[] memory allContributors = new address[](contributorList.sizeOf());
@@ -458,13 +453,9 @@ contract Project is Ownable, AccessControl {
 		return projectFunds[_account];
 	}
 
-	/// @notice Get the balance of funds given by an address
-	function getProjectFunds() external view returns (uint256) {
-		uint256 projectBalanceERC20 = racksPM_ERC20.balanceOf(address(this));
-
-		if (projectState != FINISHED && contributorList.sizeOf() > 0)
-			projectBalanceERC20 -= colateralCost * contributorList.sizeOf();
-		return projectBalanceERC20;
+	/// @notice Get total amount of funds a Project got since creation
+	function getTotalAmountFunded() external view returns (uint256) {
+		return totalAmountFunded;
 	}
 
 	/// @notice Returns whether the project is pending or not
