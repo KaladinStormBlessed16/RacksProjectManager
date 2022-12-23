@@ -11,7 +11,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				accounts = await ethers.getSigners(); // could also do with getNamedAccounts
 				[deployer, user1, user2, user3] = accounts;
 
-				await deployments.fixture(["rackspm", "mocks"]);
+				await deployments.fixture(["rackspm", "mocks", "proxy"]);
 
 				const Proxy = await ethers.getContract("TransparentUpgradeableProxy");
 				const RacksPMContract = await ethers.getContract("RacksProjectManager");
@@ -528,10 +528,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 				it("Should revert with projectInvalidParameterErr", async () => {
 					await expect(projectContract.setName("")).to.be.revertedWithCustomError(
-						projectContract,
-						"projectInvalidParameterErr"
-					);
-					await expect(projectContract.setColateralCost(0)).to.be.revertedWithCustomError(
 						projectContract,
 						"projectInvalidParameterErr"
 					);

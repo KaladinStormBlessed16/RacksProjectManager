@@ -1,4 +1,5 @@
 //SPDX-License-Identifier: MIT
+// @author KaladinStormblessed16 and Daniel Sintimbrean
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -102,7 +103,7 @@ contract RacksProjectManager is
 		uint256 _maxContributorsNumber
 	) external onlyAdmin isNotPaused {
 		if (
-			_colateralCost <= 0 ||
+			_colateralCost < 0 ||
 			_reputationLevel <= 0 ||
 			_maxContributorsNumber <= 0 ||
 			bytes(_name).length <= 0

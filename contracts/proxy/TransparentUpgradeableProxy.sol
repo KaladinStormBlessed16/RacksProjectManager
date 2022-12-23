@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
  * @dev This contract implements a proxy that is upgradeable by an admin.
  *
  * To avoid https://medium.com/nomic-labs-blog/malicious-backdoors-in-ethereum-proxies-62629adf3357[proxy selector
- * clashing], which can potentially be used in an attack, this contract uses the
+ * clashing], which can potentially be used in an attack, this contract uses the transparent proxy pattern
  * https://blog.openzeppelin.com/the-transparent-proxy-pattern/[transparent proxy pattern]. This pattern implies two
  * things that go hand in hand:
  *

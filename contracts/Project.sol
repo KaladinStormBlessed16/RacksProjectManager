@@ -144,9 +144,10 @@ contract Project is Ownable, AccessControl {
 		contributorId[contributor.wallet] = progressiveId;
 
 		emit newProjectContributorsRegistered(address(this), msg.sender);
-
-		bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), colateralCost);
-		if (!success) revert erc20TransferFailed();
+		if (colateralCost > 0) {
+			bool success = racksPM_ERC20.transferFrom(msg.sender, address(this), colateralCost);
+			if (!success) revert erc20TransferFailed();
+		}
 	}
 
 	/**
@@ -192,8 +193,10 @@ contract Project is Ownable, AccessControl {
 				increaseContributorReputation(reputationToIncrease, i);
 				racksPM.setAccountToContributorData(contrAddress, projectContributors[i]);
 
-				bool success = racksPM_ERC20.transfer(contrAddress, colateralCost);
-				if (!success) revert erc20TransferFailed();
+				if (colateralCost > 0) {
+					bool success = racksPM_ERC20.transfer(contrAddress, colateralCost);
+					if (!success) revert erc20TransferFailed();
+				}
 
 				(existNext, i) = contributorList.getNextNode(i);
 			}
@@ -323,7 +326,7 @@ contract Project is Ownable, AccessControl {
 		contributorId[_contributor] = 0;
 		contributorList.remove(id);
 
-		if (_returnColateral) {
+		if (_returnColateral && colateralCost > 0) {
 			bool success = racksPM_ERC20.transfer(_contributor, colateralCost);
 			if (!success) revert erc20TransferFailed();
 		}
@@ -357,7 +360,7 @@ contract Project is Ownable, AccessControl {
 	function setColateralCost(
 		uint256 _colateralCost
 	) external onlyAdmin isEditable isNotPaused isNotDeleted {
-		if (_colateralCost <= 0) revert projectInvalidParameterErr();
+		if (_colateralCost < 0) revert projectInvalidParameterErr();
 		colateralCost = _colateralCost;
 	}
 

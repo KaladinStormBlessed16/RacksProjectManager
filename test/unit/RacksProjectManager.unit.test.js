@@ -11,7 +11,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				accounts = await ethers.getSigners();
 				[deployer, user1, user2] = accounts;
 
-				await deployments.fixture(["rackspm", "mocks"]);
+				await deployments.fixture(["rackspm", "mocks", "proxy"]);
 
 				const mrcContract = await ethers.getContract("MRCRYPTO");
 				mrc = await mrcContract.connect(deployer);
@@ -67,10 +67,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 
 				it("Should revert with projectInvalidParameterErr", async () => {
-					await expect(
-						racksPM.createProject("Project2", 0, 1, 2)
-					).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
-
 					await expect(
 						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 0, 2)
 					).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
