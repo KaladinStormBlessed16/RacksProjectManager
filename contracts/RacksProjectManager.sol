@@ -195,11 +195,18 @@ contract RacksProjectManager is
 	}
 
 	/// Increase Contributor's Reputation Level
-	function increaseContributorLv(address _account, uint256 levels) public onlyAdmin {
-		if (levels <= 0) revert invalidParameterErr();
+	function increaseContributorRP(
+		address _account,
+		uint256 grossReputationPoints
+	) public onlyAdmin {
+		if (grossReputationPoints <= 0) revert invalidParameterErr();
 		Contributor memory contributor = contributorsData[_account];
-		contributor.reputationLevel += levels;
-		contributor.reputationPoints = 0;
+
+		while (grossReputationPoints >= (contributor.reputationLevel * 100)) {
+			grossReputationPoints -= (contributor.reputationLevel * 100);
+			contributor.reputationLevel++;
+		}
+		contributor.reputationPoints = grossReputationPoints;
 		contributorsData[_account] = contributor;
 	}
 

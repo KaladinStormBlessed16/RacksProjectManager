@@ -88,6 +88,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					const tx = await racksPM
 						.connect(user1)
 						.createProject("Project2", ethers.utils.parseEther("100"), 1, 2);
+
 					const rc = await tx.wait();
 					const { newProjectAddress: project2Address } = rc.events.find(
 						(e) => e.event == "newProjectCreated"
@@ -155,6 +156,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					projects = await racksPM.getProjects();
 					expect(projects).to.have.same.members([project1.address]);
+
+					await racksPM.createProject("Project3", ethers.utils.parseEther("0"), 1, 2);
 				});
 
 				it("Should revert if the smart contract is paused", async () => {
