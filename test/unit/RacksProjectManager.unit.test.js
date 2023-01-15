@@ -190,7 +190,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				it("Should register Contributor", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
-					let contributor = await racksPM.connect(user1).getContributor(0);
+					let contributor = await racksPM
+						.connect(user1)
+						.getContributorData(user1.address);
 					assert(contributor.wallet == user1.address);
 					assert.equal(await racksPM.getNumberOfContributors(), 1);
 				});

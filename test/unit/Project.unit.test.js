@@ -87,7 +87,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						"maxContributorsNumberExceededErr"
 					);
 
-					// if remove one contributor you can add an other one
+					// if remove one contributor you can add another one
 					await projectContract.removeContributor(user2.address, true);
 
 					assert.equal(await projectContract.getNumberOfContributors(), 1);
@@ -155,6 +155,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					assert(projectContributorsAddress[0] === user1.address);
 					assert.equal(await projectContract.getNumberOfContributors(), 1);
 				});
+
 				it("Should revert if the smart contract is paused", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
@@ -168,6 +169,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						projectContract.connect(user1).registerProjectContributor()
 					).to.be.revertedWithCustomError(racksPM, "pausedErr");
 				});
+
 				it("Should revert if the project is deleted", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
@@ -180,6 +182,39 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await expect(
 						projectContract.connect(user1).registerProjectContributor()
 					).to.be.revertedWithCustomError(projectContract, "deletedErr");
+				});
+			});
+
+			describe("Modify Contributor", () => {
+				it("Should modify reputation points of a Project Contributor", async () => {
+					await mrc.connect(user1).mint(1);
+					await racksPM.connect(user1).registerContributor();
+					await erc20
+						.connect(user1)
+						.approve(projectContract.address, ethers.utils.parseEther("100"));
+					expect(
+						await erc20.allowance(user1.address, projectContract.address)
+					).to.be.equal(await projectContract.getColateralCost());
+					await projectContract.connect(user1).registerProjectContributor();
+					const projectContributorsAddress =
+						await projectContract.getAllContributorsAddress();
+					assert(projectContributorsAddress[0] === user1.address);
+					assert.equal(await projectContract.getNumberOfContributors(), 1);
+
+					await racksPM.modifyContributorRP(user1.address, 150, true);
+					let contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 2);
+					assert.equal(contr.reputationPoints.toString(), 50);
+
+					await racksPM.modifyContributorRP(user1.address, 100, false);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 1);
+					assert.equal(contr.reputationPoints.toString(), 50);
+
+					await racksPM.modifyContributorRP(user1.address, 30, false);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 1);
+					assert.equal(contr.reputationPoints.toString(), 20);
 				});
 			});
 

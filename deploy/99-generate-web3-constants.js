@@ -75,4 +75,4 @@ async function updateContractAddresses() {
 	fs.writeFileSync(backendContractsFile, JSON.stringify(contractAddresses));
 	fs.writeFileSync(frontendContractsFile, JSON.stringify(contractAddresses));
 }
-module.exports.tags = ["all", "json"];
+module.exports.tags = ["all", "upgrade", "json"];

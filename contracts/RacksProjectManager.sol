@@ -64,7 +64,7 @@ contract RacksProjectManager is
 		_;
 	}
 
-	/// @notice Check that the smart contract is paused
+	/// @notice Check that the smart contract is not paused
 	modifier isNotPaused() {
 		if (paused) revert pausedErr();
 		_;
@@ -194,19 +194,34 @@ contract RacksProjectManager is
 		contributorsData[_account] = _newData;
 	}
 
-	/// Increase Contributor's Reputation Level
-	function increaseContributorRP(
+	/// Increase Contributor's Reputation Points
+	function modifyContributorRP(
 		address _account,
-		uint256 grossReputationPoints
+		uint256 grossReputationPoints,
+		bool add
 	) public onlyAdmin {
 		if (grossReputationPoints <= 0) revert invalidParameterErr();
 		Contributor memory contributor = contributorsData[_account];
 
-		while (grossReputationPoints >= (contributor.reputationLevel * 100)) {
-			grossReputationPoints -= (contributor.reputationLevel * 100);
-			contributor.reputationLevel++;
+		if (add) {
+			while (grossReputationPoints >= (contributor.reputationLevel * 100)) {
+				grossReputationPoints -= (contributor.reputationLevel * 100);
+				contributor.reputationLevel++;
+			}
+			contributor.reputationPoints = grossReputationPoints;
+		} else {
+			while (grossReputationPoints > 0) {
+				if (grossReputationPoints >= contributor.reputationPoints) {
+					contributor.reputationLevel--;
+					grossReputationPoints -= contributor.reputationPoints;
+					contributor.reputationPoints = (contributor.reputationLevel * 100);
+				} else {
+					contributor.reputationPoints -= grossReputationPoints;
+					grossReputationPoints = 0;
+				}
+			}
 		}
-		contributor.reputationPoints = grossReputationPoints;
+
 		contributorsData[_account] = contributor;
 	}
 
@@ -283,11 +298,6 @@ contract RacksProjectManager is
 		}
 
 		return allProjects;
-	}
-
-	/// @notice Get Contributor by index
-	function getContributor(uint256 _index) public view returns (Contributor memory) {
-		return contributorsData[contributors[_index]];
 	}
 
 	/// @inheritdoc IRacksProjectManager
