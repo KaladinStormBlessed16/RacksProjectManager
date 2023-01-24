@@ -1,0 +1,30 @@
+name: RacksProjectManager Build-Test
+
+on:
+    pull_request:
+        branches:
+            - develop
+
+jobs:
+    ############ UNIT TEST ############
+    test-unit:
+        name: Unit Tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 16.x
+                  cache: "npm"
+                  registry-url: https://registry.npmjs.org/
+
+            - run: corepack enable
+
+            - name: Install NPM Dependencies
+              run: npm install
+
+            - name: Unit Tests
+              run: npx hardhat test
