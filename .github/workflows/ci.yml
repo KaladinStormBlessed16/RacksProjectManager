@@ -4,6 +4,10 @@ on:
     pull_request:
         branches:
             - master
+            - development
+    push:
+        branches:
+            - development
 
 jobs:
     ############ UNIT TEST ############
