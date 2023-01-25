@@ -285,6 +285,7 @@ contract Project is Ownable, AccessControl {
 			while (grossReputationPoints >= (_contributor.reputationLevel * 100)) {
 				grossReputationPoints -= (_contributor.reputationLevel * 100);
 				_contributor.reputationLevel++;
+				_contributor.reputationPoints = 0;
 			}
 			_contributor.reputationPoints = grossReputationPoints;
 			projectContributors[_index] = _contributor;

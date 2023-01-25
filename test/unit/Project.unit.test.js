@@ -211,10 +211,30 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					assert.equal(contr.reputationLevel.toString(), 1);
 					assert.equal(contr.reputationPoints.toString(), 50);
 
-					await racksPM.modifyContributorRP(user1.address, 30, false);
+					await racksPM.modifyContributorRP(user1.address, 20, false);
 					contr = await racksPM.getContributorData(user1.address);
 					assert.equal(contr.reputationLevel.toString(), 1);
-					assert.equal(contr.reputationPoints.toString(), 20);
+					assert.equal(contr.reputationPoints.toString(), 30);
+
+					await racksPM.modifyContributorRP(user1.address, 100, true);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 2);
+					assert.equal(contr.reputationPoints.toString(), 30);
+
+					await racksPM.modifyContributorRP(user1.address, 100, true);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 2);
+					assert.equal(contr.reputationPoints.toString(), 130);
+
+					await racksPM.modifyContributorRP(user1.address, 120, true);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 3);
+					assert.equal(contr.reputationPoints.toString(), 50);
+
+					await racksPM.modifyContributorRP(user1.address, 690, true);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(contr.reputationLevel.toString(), 5);
+					assert.equal(contr.reputationPoints.toString(), 40);
 				});
 			});
 
@@ -443,6 +463,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.connect(user2)
 						.approve(project2Contract.address, ethers.utils.parseEther("100"));
 					await project2Contract.connect(user2).registerProjectContributor();
+
+					const pcUser22 = await racksPM.getContributorData(user2.address);
+					expect(pcUser22.reputationLevel).to.be.equal(3);
+					expect(pcUser22.reputationPoints).to.be.equal(50);
 
 					await project2Contract.finishProject(
 						500,
