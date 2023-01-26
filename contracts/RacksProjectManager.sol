@@ -12,6 +12,8 @@ import "./Project.sol";
 import "./Contributor.sol";
 import "./Err.sol";
 import "./library/StructuredLinkedList.sol";
+import "./library/Math.sol";
+
 
 //              ▟██████████   █████    ▟███████████   █████████████
 //            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
@@ -24,7 +26,7 @@ import "./library/StructuredLinkedList.sol";
 // ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
 //                        ▜██████▙            ▟██████▛          ┌────────┐
 //                          ▜██████▙        ▟██████▛            │  LABS  │
-//                                                                 └────────┘
+//                                                              └────────┘
 
 contract RacksProjectManager is
 	IRacksProjectManager,
@@ -32,12 +34,12 @@ contract RacksProjectManager is
 	OwnableUpgradeable,
 	AccessControlUpgradeable
 {
-	/// @notice interfaces
+	/// interfaces
 	/// @custom:oz-upgrades-unsafe-allow state-variable-immutable
 	IHolderValidation private immutable holderValidation;
 	IERC20 private erc20;
 
-	/// @notice State variables
+	/// State variables
 	bytes32 private constant ADMIN_ROLE = 0x00;
 	address[] private contributors;
 	bool private paused;
@@ -51,20 +53,26 @@ contract RacksProjectManager is
 	mapping(address => uint256) private projectId;
 	mapping(address => Contributor) private contributorsData;
 
-	/// @notice Check that user is Admin
+	/**
+	 * @dev Only callable by Admins
+	 */ 
 	modifier onlyAdmin() {
 		if (!hasRole(ADMIN_ROLE, msg.sender)) revert adminErr();
 		_;
 	}
 
-	/// @notice Check that user is Holder or Admin
+	/**
+	 * @dev Only callable by Holders or Admins
+	 */ 
 	modifier onlyHolder() {
 		if (holderValidation.isHolder(msg.sender) == address(0) && !hasRole(ADMIN_ROLE, msg.sender))
 			revert holderErr();
 		_;
 	}
 
-	/// @notice Check that the smart contract is not paused
+	/**
+	 * @dev Only callable when contract is not paused
+	 */
 	modifier isNotPaused() {
 		if (paused) revert pausedErr();
 		_;
@@ -73,7 +81,11 @@ contract RacksProjectManager is
 	///////////////////
 	//   Constructor //
 	///////////////////
+
 	/// @custom:oz-upgrades-unsafe-allow constructor
+	/**
+	 * @param _holderValidation Address of the contract that validates the holders
+	 */
 	constructor(IHolderValidation _holderValidation) {
 		holderValidation = _holderValidation;
 	}
@@ -81,6 +93,9 @@ contract RacksProjectManager is
 	///////////////////
 	//   Initialize  //
 	///////////////////
+	/**
+	 * @param _erc20 Address of the ERC20 token
+	 */
 	function initialize(IERC20 _erc20) external initializer {
 		erc20 = _erc20;
 		__Ownable_init();
@@ -186,7 +201,9 @@ contract RacksProjectManager is
 		}
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
 	function setAccountToContributorData(
 		address _account,
 		Contributor memory _newData
@@ -194,7 +211,6 @@ contract RacksProjectManager is
 		contributorsData[_account] = _newData;
 	}
 
-	///
 	/**
 	 * @notice Increase Contributor's Reputation Points if
 	 * @param add is true, otherwise it reduces
@@ -218,81 +234,38 @@ contract RacksProjectManager is
 		contributorsData[_account] = contributor;
 	}
 
+	/**
+	 * @notice Set new paused state
+	 * @param _newPausedValue New paused state 
+	 */
 	function setIsPaused(bool _newPausedValue) public onlyAdmin {
 		paused = _newPausedValue;
 	}
 
+	/**
+	 * @notice Return the the level of a Contributor based on the total reputation points
+	 * @dev The level is calculated based on the lazy caterer's sequence
+	 * @dev Example :
+	 *  0    points -> level 1 
+     * 	100  points -> level 2
+     * 	200  points -> level 3
+     * 	400  points -> level 4
+     * 	700  points -> level 5
+     * 	1100 points -> level 6
+     * 	1600 points -> level 7
+     * 	2200 points -> level 8
+     * 	2900 points -> level 9
+     * 	3700 points -> level 10
+	 * @param totalPoints Total Reputation Points of a Contributor
+	 */
 	function calculateLevel(uint256 totalPoints) override public pure returns (uint256){
         if (totalPoints < 100) return 1;
 
         uint256 points = totalPoints / 100;
-        return ((sqrt(8 * points - 7) - 1) / 2) + 2;
+        return ((MathLib.sqrt(8 * points - 7) - 1) / 2) + 2;
     }
 
-	function sqrt(uint256 x) internal pure returns (uint256 z) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            let y := x // We start y at x, which will help us make our initial estimate.
 
-            z := 181 // The "correct" value is 1, but this saves a multiplication later.
-
-            // This segment is to get a reasonable initial estimate for the Babylonian method. With a bad
-            // start, the correct # of bits increases ~linearly each iteration instead of ~quadratically.
-
-            // We check y >= 2^(k + 8) but shift right by k bits
-            // each branch to ensure that if x >= 256, then y >= 256.
-            if iszero(lt(y, 0x10000000000000000000000000000000000)) {
-                y := shr(128, y)
-                z := shl(64, z)
-            }
-            if iszero(lt(y, 0x1000000000000000000)) {
-                y := shr(64, y)
-                z := shl(32, z)
-            }
-            if iszero(lt(y, 0x10000000000)) {
-                y := shr(32, y)
-                z := shl(16, z)
-            }
-            if iszero(lt(y, 0x1000000)) {
-                y := shr(16, y)
-                z := shl(8, z)
-            }
-
-            // Goal was to get z*z*y within a small factor of x. More iterations could
-            // get y in a tighter range. Currently, we will have y in [256, 256*2^16).
-            // We ensured y >= 256 so that the relative difference between y and y+1 is small.
-            // That's not possible if x < 256 but we can just verify those cases exhaustively.
-
-            // Now, z*z*y <= x < z*z*(y+1), and y <= 2^(16+8), and either y >= 256, or x < 256.
-            // Correctness can be checked exhaustively for x < 256, so we assume y >= 256.
-            // Then z*sqrt(y) is within sqrt(257)/sqrt(256) of sqrt(x), or about 20bps.
-
-            // For s in the range [1/256, 256], the estimate f(s) = (181/1024) * (s+1) is in the range
-            // (1/2.84 * sqrt(s), 2.84 * sqrt(s)), with largest error when s = 1 and when s = 256 or 1/256.
-
-            // Since y is in [256, 256*2^16), let a = y/65536, so that a is in [1/256, 256). Then we can estimate
-            // sqrt(y) using sqrt(65536) * 181/1024 * (a + 1) = 181/4 * (y + 65536)/65536 = 181 * (y + 65536)/2^18.
-
-            // There is no overflow risk here since y < 2^136 after the first branch above.
-            z := shr(18, mul(z, add(y, 65536))) // A mul() is saved from starting z at 181.
-
-            // Given the worst case multiplicative error of 2.84 above, 7 iterations should be enough.
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-
-            // If x+1 is a perfect square, the Babylonian method cycles between
-            // floor(sqrt(x)) and ceil(sqrt(x)). This statement ensures we return floor.
-            // See: https://en.wikipedia.org/wiki/Integer_square_root#Using_only_integer_division
-            // Since the ceil is rare, we save gas on the assignment and repeat division in the rare case.
-            // If you don't care whether the floor or ceil square root is returned, you can remove this statement.
-            z := sub(z, lt(div(x, z), z))
-        }
-    }
 
 	////////////////////////
 	//  Getter Functions //

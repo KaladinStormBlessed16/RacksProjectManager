@@ -48,13 +48,17 @@ contract Project is Ownable, AccessControl {
 	ProjectState private projectState;
 	IERC20 private immutable racksPM_ERC20;
 
-	/// @notice Check that the project has no contributors, therefore is editable
+	/** 
+	 *  @notice Check that the project has no contributors, therefore is editable
+	 */
 	modifier isEditable() {
 		if (contributorList.sizeOf() > 0) revert projectNoEditableErr();
 		_;
 	}
 
-	/// @notice Check that the project is not finished
+	/**
+	 *  @notice Check that the project is not finished
+	 */
 	modifier isNotFinished() {
 		if (projectState == FINISHED) revert projectFinishedErr();
 		_;
@@ -90,10 +94,18 @@ contract Project is Ownable, AccessControl {
 		_;
 	}
 
-	/// @notice Events
+	/// Events
 	event newProjectContributorsRegistered(address projectAddress, address newProjectContributor);
 	event projectFunded(address projectAddress, address funderWallet, uint256 amount);
 
+	/**
+	 * @notice Constructor
+	 * @param _racksPM RacksProjectManager address
+	 * @param _name Project name
+	 * @param _colateralCost Colateral cost to register as Contributor 
+	 * @param _reputationLevel Reputation level to register as Contributor
+	 * @param _maxContributorsNumber Max number of Contributors
+	 */
 	constructor(
 		IRacksProjectManager _racksPM,
 		string memory _name,
@@ -157,6 +169,9 @@ contract Project is Ownable, AccessControl {
 	 * - The contributors and participationWeights array must have the same size of the project contributors list.
 	 * - If there is a banned Contributor in the project, you have to pass his address and participation (should be 0) anyways.
 	 * - The sum of @param _participationWeights can not be more than 100
+	 * @param _totalReputationPointsReward Total reputation points to distribute
+	 * @param _contributors Array of contributors addresses
+	 * @param _participationWeights Array of participation weights of each contributor (in percentage)
 	 */
 	function finishProject(
 		uint256 _totalReputationPointsReward,
@@ -207,6 +222,7 @@ contract Project is Ownable, AccessControl {
 	/**
 	 * @notice Fund the project with ERC20
 	 * @dev This serves as a reward to contributors
+	 * @param _amount Amount of the ERC20 to fund the project
 	 */
 	function fundProject(uint256 _amount) external isNotPaused isNotDeleted isNotPending {
 		if (_amount <= 0 || contributorList.sizeOf() < 1) revert invalidParameterErr();
@@ -278,14 +294,22 @@ contract Project is Ownable, AccessControl {
 		return super.supportsInterface(_interfaceId);
 	}
 
+	/**
+	 * @notice Delete the project and return funds to funders. Only callable by Admins
+	 * and only when there are no contributors 
+	 */
 	function deleteProject() public onlyAdmin isNotDeleted isEditable {
 		projectState = DELETED;
+
 		racksPM.deleteProject();
+
 		if (racksPM_ERC20.balanceOf(address(this)) > 0) {
 			unchecked {
+				// Return funds to funders
 				for (uint256 i = 0; i < funders.length; i++) {
 					address funder = funders[i];
 					uint256 amount = projectFunds[funder];
+
 					if (amount > 0) {
 						projectFunds[funder] = 0;
 						totalAmountFunded -= amount;
@@ -297,11 +321,17 @@ contract Project is Ownable, AccessControl {
 		}
 	}
 
+	/**
+	 * @notice Remove a contributor from the project
+	 * @param _contributor Address of the contributor to remove
+	 * @param _returnColateral If true, the colateral cost will be returned to the contributor 
+	 */
 	function removeContributor(
 		address _contributor,
 		bool _returnColateral
 	) public onlyAdmin isNotDeleted {
 		if (!isContributorInProject(_contributor)) revert contributorErr();
+
 		uint256 id = contributorId[_contributor];
 		contributorId[_contributor] = 0;
 		contributorList.remove(id);
@@ -371,12 +401,16 @@ contract Project is Ownable, AccessControl {
 	//  Getter Functions //
 	//////////////////////
 
-	/// @notice Get the project name
+	/**
+	 * @notice Get the project name
+	 */
 	function getName() external view returns (string memory) {
 		return name;
 	}
 
-	/// @notice Get the colateral cost to enter as contributor
+	/**
+	 * @notice Get the colateral cost to enter as contributor
+	 */
 	function getColateralCost() external view returns (uint256) {
 		return colateralCost;
 	}
