@@ -24,7 +24,7 @@
         "hardhat": "^2.9.9",
         "hardhat-deploy": "^0.10.5",
         "hardhat-gas-reporter": "^1.0.8",
-        "solidity-coverage": "^0.7.21"
+        "solidity-coverage": "^0.8.0"
     },
     "overrides": {
         "@nomicfoundation/hardhat-chai-matchers": {
