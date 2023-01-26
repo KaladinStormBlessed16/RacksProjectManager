@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-// @author KaladinStormblessed16 and Daniel Sintimbrean
+
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -9,24 +9,32 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IRacksProjectManager.sol";
 import "./interfaces/IHolderValidation.sol";
 import "./Project.sol";
-import "./Contributor.sol";
 import "./Err.sol";
 import "./library/StructuredLinkedList.sol";
 import "./library/Math.sol";
 
-//              ▟██████████   █████    ▟███████████   █████████████
-//            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
-//           ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
-//            ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
-//              ▀     █████   █████████▛      █████     ▟██████▛
-//                    █████   ███████▛      ▟█████▛   ▟██████▛
-//   ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
-//  ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
-// ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
-//                        ▜██████▙            ▟██████▛          ┌────────┐
-//                          ▜██████▙        ▟██████▛            │  LABS  │
-//                                                              └────────┘
+/**
+ * 
+ *               ▟██████████   █████    ▟███████████   █████████████
+ *             ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
+ *            ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
+ *             ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
+ *               ▀     █████   █████████▛      █████     ▟██████▛
+ *                     █████   ███████▛      ▟█████▛   ▟██████▛
+ *    ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
+ *   ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
+ *  ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
+ *                         ▜██████▙            ▟██████▛          ┌────────┐
+ *                           ▜██████▙        ▟██████▛            │  LABS  │
+ *                                                               └────────┘
+ */
 
+/**
+ * @title RacksProjectManager
+ * @author KaladinStormblessed16 and Daniel Sintimbrean
+ * 
+ * Powered by RacksLabs
+ */
 contract RacksProjectManager is
 	IRacksProjectManager,
 	Initializable,
