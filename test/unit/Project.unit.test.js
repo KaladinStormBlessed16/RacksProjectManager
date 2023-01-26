@@ -467,8 +467,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await project2Contract.connect(user2).registerProjectContributor();
 
 					const pcUser22 = await racksPM.getContributorData(user2.address);
-					expect(pcUser22.reputationLevel).to.be.equal(3);
-					expect(pcUser22.reputationPoints).to.be.equal(50);
+					const lvlUser22 = await racksPM.getContributorLevel(user2.address);
+
+					expect(lvlUser22).to.be.equal(3);
+					expect(pcUser22.reputationPoints).to.be.equal(350);
 
 					await project2Contract.finishProject(
 						500,
@@ -495,15 +497,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					const pcUser2 = await racksPM.getContributorData(user2.address);
 
 					expect(pcUserBanned.wallet).to.be.equal(user3.address);
-					expect(pcUserBanned.reputationLevel).to.be.equal(1);
 					expect(pcUserBanned.reputationPoints).to.be.equal(0);
 
 					expect(pcUser1.wallet).to.be.equal(user1.address);
-					expect(pcUser1.reputationLevel).to.be.equal(3);
-					expect(pcUser1.reputationPoints).to.be.equal(25);
+					expect(await racksPM.getContributorLevel(user1.address)).to.be.equal(3);
+					expect(pcUser1.reputationPoints).to.be.equal(325);
 					expect(pcUser2.wallet).to.be.equal(user2.address);
-					expect(pcUser2.reputationLevel).to.be.equal(4);
-					expect(pcUser2.reputationPoints).to.be.equal(75);
+					expect(await racksPM.getContributorLevel(user2.address)).to.be.equal(4);
+					expect(pcUser2.reputationPoints).to.be.equal(675);
 				});
 				it("Should revert if the smart contract is paused", async () => {
 					await mrc.connect(user1).mint(1);
