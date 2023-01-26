@@ -211,7 +211,7 @@ contract RacksProjectManager is
 		if (add) {
 			grossReputationPoints += contributor.reputationPoints;
 		} else {
-			grossReputationPoints -= contributor.reputationPoints;
+			grossReputationPoints = contributor.reputationPoints - grossReputationPoints;
 		}
 
 			contributor.reputationPoints = grossReputationPoints;

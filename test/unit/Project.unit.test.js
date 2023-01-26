@@ -203,38 +203,38 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await racksPM.modifyContributorRP(user1.address, 150, true);
 					let contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 2);
-					assert.equal(contr.reputationPoints.toString(), 50);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 2);
+					assert.equal(contr.reputationPoints.toString(), 150);
 
 					await racksPM.modifyContributorRP(user1.address, 100, false);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 1);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 1);
 					assert.equal(contr.reputationPoints.toString(), 50);
 
 					await racksPM.modifyContributorRP(user1.address, 20, false);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 1);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 1);
 					assert.equal(contr.reputationPoints.toString(), 30);
 
 					await racksPM.modifyContributorRP(user1.address, 100, true);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 2);
-					assert.equal(contr.reputationPoints.toString(), 30);
-
-					await racksPM.modifyContributorRP(user1.address, 100, true);
-					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 2);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 2);
 					assert.equal(contr.reputationPoints.toString(), 130);
+
+					await racksPM.modifyContributorRP(user1.address, 100, true);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 3);
+					assert.equal(contr.reputationPoints.toString(), 230);
 
 					await racksPM.modifyContributorRP(user1.address, 120, true);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 3);
-					assert.equal(contr.reputationPoints.toString(), 50);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 3);
+					assert.equal(contr.reputationPoints.toString(), 350);
 
 					await racksPM.modifyContributorRP(user1.address, 690, true);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 5);
-					assert.equal(contr.reputationPoints.toString(), 40);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 5);
+					assert.equal(contr.reputationPoints.toString(), 690 + 350);
 				});
 			});
 
