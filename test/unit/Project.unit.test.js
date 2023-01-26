@@ -15,14 +15,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 				const Proxy = await ethers.getContract("TransparentUpgradeableProxy");
 				const RacksPMContract = await ethers.getContract("RacksProjectManager");
-				const ProxyImplementation = await RacksPMContract.attach(Proxy.address);
-				racksPM = await ProxyImplementation.connect(deployer);
+				const ProxyImplementation = RacksPMContract.attach(Proxy.address);
+				racksPM = ProxyImplementation.connect(deployer);
 
 				let mrcContract = await ethers.getContract("MRCRYPTO");
-				mrc = await mrcContract.connect(deployer);
+				mrc = mrcContract.connect(deployer);
 
 				let erc20Contract = await ethers.getContract("MockErc20");
-				erc20 = await erc20Contract.connect(deployer);
+				erc20 = erc20Contract.connect(deployer);
 
 				await racksPM.createProject("Project1", ethers.utils.parseEther("100"), 1, 2);
 				const projectAddress = await (await racksPM.getProjects())[0];
@@ -749,11 +749,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.fundProject(ethers.utils.parseEther("500"));
 					const rc = await tx.wait();
 					const event = rc.events.find((e) => e.event == "projectFunded").args;
-					await expect(event).to.exist;
-					await expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
+					expect(event).to.exist;
+					expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
-					await expect(await projectContract.getTotalAmountFunded()).to.be.equal(
+					expect(await projectContract.getTotalAmountFunded()).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
 				});
