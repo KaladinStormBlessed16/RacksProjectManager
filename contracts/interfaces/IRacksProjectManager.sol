@@ -56,12 +56,17 @@ interface IRacksProjectManager {
 	/**
 	 * @notice Returns all the data associated with @param _account contributor
 	 */
-	function getContributorData(address _account) external view returns (Contributor memory);
+	function getContributorData(
+		address _account
+	) external view returns (Contributor memory);
 
 	/**
 	 * @notice Update contributor data associated with @param _account contributor
 	 */
-	function setAccountToContributorData(address _account, Contributor memory _newData) external;
+	function setAccountToContributorData(
+		address _account,
+		Contributor memory _newData
+	) external;
 
 	/**
 	 * @notice Return true if the RacksProjectsManager is paused, otherwise false
@@ -76,5 +81,9 @@ interface IRacksProjectManager {
 
 	function calculateLevel(uint256 totalPoints) external returns (uint256);
 
-	function modifyContributorRP( address _account, uint256 grossReputationPoints, bool add)  external;
+	function modifyContributorRP(
+		address _account,
+		uint256 grossReputationPoints,
+		bool add
+	) external;
 }

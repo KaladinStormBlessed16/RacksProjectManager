@@ -7,7 +7,7 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint": "solhint 'contracts/*.sol'",
         "lint:fix": "solhint 'contracts/**/*.sol' --fix",
-        "format": "prettier --write .",
+		"format": "prettier --write . && prettier -w ./contracts/**/*.sol",
         "slither": "slither . --solc-remaps '@openzeppelin=node_modules/@openzeppelin --exclude naming-convention,external-function,low-level-calls"
     },
     "keywords": [],

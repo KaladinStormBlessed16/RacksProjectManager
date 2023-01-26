@@ -96,9 +96,9 @@ The participation percentages will be recorded in the project for future equity 
 
 ## Build with
 
- [![Solidity][Solidity.com]][Solidity-url]
+[![Solidity][solidity.com]][solidity-url]
 
- [![Hardhat][Hardhat.com]][Hardhat-url]
+[![Hardhat][hardhat.com]][hardhat-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -106,19 +106,19 @@ The participation percentages will be recorded in the project for future equity 
 
 ### Installation
 
-* Git clone
+-   Git clone
 
 ```sh
 git clone https://github.com/racks-community/racksprojectmanager
 ```
 
-* Install dependencies
+-   Install dependencies
 
 ```sh
 npm install
 ```
 
-* Recommended [`hardhat-shorthand`](https://hardhat.org/hardhat-runner/docs/guides/command-line-completion)
+-   Recommended [`hardhat-shorthand`](https://hardhat.org/hardhat-runner/docs/guides/command-line-completion)
 
 ```sh
  npm install --global hardhat-shorthand
@@ -127,6 +127,7 @@ npm install
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
+
 ## Usage
 
 ### Run tests
@@ -151,7 +152,7 @@ hh test
 [issues-url]: https://github.com/racks-community/racksprojectmanager/issues
 [license-shield]: https://img.shields.io/github/license/racks-community/racksprojectmanager.svg?style=for-the-badge
 [license-url]: https://github.com/racks-community/racksprojectmanager/blob/master/LICENSE.txt
-[Solidity.com]: https://img.shields.io/badge/Solidity-444444?style=for-the-badge&logo=solidity&logoColor=white
-[Solidity-url]: https://soliditylang.org/
-[Hardhat.com]: https://raw.githubusercontent.com/DanielSintimbrean/BlackJack-3.0/master/images/Hardhat-url.svg
-[Hardhat-url]: https://hardhat.org/
+[solidity.com]: https://img.shields.io/badge/Solidity-444444?style=for-the-badge&logo=solidity&logoColor=white
+[solidity-url]: https://soliditylang.org/
+[hardhat.com]: https://raw.githubusercontent.com/DanielSintimbrean/BlackJack-3.0/master/images/Hardhat-url.svg
+[hardhat-url]: https://hardhat.org/

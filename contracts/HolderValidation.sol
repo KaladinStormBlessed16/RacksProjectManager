@@ -30,12 +30,15 @@ contract HolderValidation is IHolderValidation, Ownable {
 	/**
 	 * @notice Get whether a wallet is holder of at least one authorized collection
 	 */
-	function isHolder(address _wallet) external view override returns (address) {
+	function isHolder(
+		address _wallet
+	) external view override returns (address) {
 		uint256 j = 0;
 		(bool existNext, uint256 i) = collectionsList.getNextNode(0);
 
 		while (i != 0 && existNext) {
-			if (collectionStore[i].balanceOf(_wallet) > 0) return address(collectionStore[i]);
+			if (collectionStore[i].balanceOf(_wallet) > 0)
+				return address(collectionStore[i]);
 			j++;
 			(existNext, i) = collectionsList.getNextNode(i);
 		}
@@ -73,7 +76,9 @@ contract HolderValidation is IHolderValidation, Ownable {
 	 * @notice Get all authorized collections
 	 */
 	function getAllCollections() external view returns (IERC721[] memory) {
-		IERC721[] memory allCollections = new IERC721[](collectionsList.sizeOf());
+		IERC721[] memory allCollections = new IERC721[](
+			collectionsList.sizeOf()
+		);
 
 		uint256 j = 0;
 		(bool existNext, uint256 i) = collectionsList.getNextNode(0);

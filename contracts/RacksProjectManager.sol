@@ -14,7 +14,6 @@ import "./Err.sol";
 import "./library/StructuredLinkedList.sol";
 import "./library/Math.sol";
 
-
 //              ▟██████████   █████    ▟███████████   █████████████
 //            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
 //           ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
@@ -55,7 +54,7 @@ contract RacksProjectManager is
 
 	/**
 	 * @dev Only callable by Admins
-	 */ 
+	 */
 	modifier onlyAdmin() {
 		if (!hasRole(ADMIN_ROLE, msg.sender)) revert adminErr();
 		_;
@@ -63,10 +62,12 @@ contract RacksProjectManager is
 
 	/**
 	 * @dev Only callable by Holders or Admins
-	 */ 
+	 */
 	modifier onlyHolder() {
-		if (holderValidation.isHolder(msg.sender) == address(0) && !hasRole(ADMIN_ROLE, msg.sender))
-			revert holderErr();
+		if (
+			holderValidation.isHolder(msg.sender) == address(0) &&
+			!hasRole(ADMIN_ROLE, msg.sender)
+		) revert holderErr();
 		_;
 	}
 
@@ -146,7 +147,8 @@ contract RacksProjectManager is
 	 * @dev Only callable by Holders who are not already Contributors
 	 */
 	function registerContributor() external onlyHolder isNotPaused {
-		if (isWalletContributor(msg.sender)) revert contributorAlreadyExistsErr();
+		if (isWalletContributor(msg.sender))
+			revert contributorAlreadyExistsErr();
 
 		contributors.push(msg.sender);
 		contributorsData[msg.sender] = Contributor(msg.sender, 0, false);
@@ -185,7 +187,10 @@ contract RacksProjectManager is
 	 * @notice Set a ban state for a Contributor
 	 * @dev Only callable by Admins.
 	 */
-	function setContributorStateToBanList(address _account, bool _state) external onlyAdmin {
+	function setContributorStateToBanList(
+		address _account,
+		bool _state
+	) external onlyAdmin {
 		accountIsBanned[_account] = _state;
 
 		if (_state == true) {
@@ -193,7 +198,10 @@ contract RacksProjectManager is
 
 			while (i != 0 && existNext) {
 				Project project = projectStore[i];
-				if (project.isActive() && project.isContributorInProject(_account)) {
+				if (
+					project.isActive() &&
+					project.isContributorInProject(_account)
+				) {
 					project.removeContributor(_account, false);
 				}
 				(existNext, i) = projectsList.getNextNode(i);
@@ -203,7 +211,7 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function setAccountToContributorData(
 		address _account,
 		Contributor memory _newData
@@ -220,23 +228,25 @@ contract RacksProjectManager is
 		address _account,
 		uint256 grossReputationPoints,
 		bool add
-	) override public onlyAdmin {
+	) public override onlyAdmin {
 		if (grossReputationPoints <= 0) revert invalidParameterErr();
 		Contributor memory contributor = contributorsData[_account];
 
 		if (add) {
 			grossReputationPoints += contributor.reputationPoints;
 		} else {
-			grossReputationPoints = contributor.reputationPoints - grossReputationPoints;
+			grossReputationPoints =
+				contributor.reputationPoints -
+				grossReputationPoints;
 		}
 
-			contributor.reputationPoints = grossReputationPoints;
+		contributor.reputationPoints = grossReputationPoints;
 		contributorsData[_account] = contributor;
 	}
 
 	/**
 	 * @notice Set new paused state
-	 * @param _newPausedValue New paused state 
+	 * @param _newPausedValue New paused state
 	 */
 	function setIsPaused(bool _newPausedValue) public onlyAdmin {
 		paused = _newPausedValue;
@@ -246,26 +256,26 @@ contract RacksProjectManager is
 	 * @notice Return the the level of a Contributor based on the total reputation points
 	 * @dev The level is calculated based on the lazy caterer's sequence
 	 * @dev Example :
-	 *  0    points -> level 1 
-     * 	100  points -> level 2
-     * 	200  points -> level 3
-     * 	400  points -> level 4
-     * 	700  points -> level 5
-     * 	1100 points -> level 6
-     * 	1600 points -> level 7
-     * 	2200 points -> level 8
-     * 	2900 points -> level 9
-     * 	3700 points -> level 10
+	 *  0    points -> level 1
+	 * 	100  points -> level 2
+	 * 	200  points -> level 3
+	 * 	400  points -> level 4
+	 * 	700  points -> level 5
+	 * 	1100 points -> level 6
+	 * 	1600 points -> level 7
+	 * 	2200 points -> level 8
+	 * 	2900 points -> level 9
+	 * 	3700 points -> level 10
 	 * @param totalPoints Total Reputation Points of a Contributor
 	 */
-	function calculateLevel(uint256 totalPoints) override public pure returns (uint256){
-        if (totalPoints < 100) return 1;
+	function calculateLevel(
+		uint256 totalPoints
+	) public pure override returns (uint256) {
+		if (totalPoints < 100) return 1;
 
-        uint256 points = totalPoints / 100;
-        return ((MathLib.sqrt(8 * points - 7) - 1) / 2) + 2;
-    }
-
-
+		uint256 points = totalPoints / 100;
+		return ((MathLib.sqrt(8 * points - 7) - 1) / 2) + 2;
+	}
 
 	////////////////////////
 	//  Getter Functions //
@@ -277,7 +287,11 @@ contract RacksProjectManager is
 	}
 
 	/// @notice Returns Holder Validation contract address
-	function getHolderValidationInterface() external view returns (IHolderValidation) {
+	function getHolderValidationInterface()
+		external
+		view
+		returns (IHolderValidation)
+	{
 		return holderValidation;
 	}
 
@@ -292,7 +306,9 @@ contract RacksProjectManager is
 	}
 
 	/// @inheritdoc IRacksProjectManager
-	function isContributorBanned(address _account) external view override returns (bool) {
+	function isContributorBanned(
+		address _account
+	) external view override returns (bool) {
 		return accountIsBanned[_account];
 	}
 
@@ -302,7 +318,9 @@ contract RacksProjectManager is
 	 */
 	function getProjects() public view onlyHolder returns (Project[] memory) {
 		if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProjects();
-		Project[] memory filteredProjects = new Project[](projectsList.sizeOf());
+		Project[] memory filteredProjects = new Project[](
+			projectsList.sizeOf()
+		);
 
 		unchecked {
 			uint256 callerReputationLv = getContributorLevel(msg.sender);
@@ -311,7 +329,9 @@ contract RacksProjectManager is
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
 			while (i != 0 && existNext) {
-				if (projectStore[i].getReputationLevel() <= callerReputationLv) {
+				if (
+					projectStore[i].getReputationLevel() <= callerReputationLv
+				) {
 					filteredProjects[j] = projectStore[i];
 					j++;
 				}
@@ -338,13 +358,16 @@ contract RacksProjectManager is
 	}
 
 	/// @inheritdoc IRacksProjectManager
-	function isWalletContributor(address _account) public view override returns (bool) {
+	function isWalletContributor(
+		address _account
+	) public view override returns (bool) {
 		return contributorsData[_account].wallet != address(0);
 	}
 
-	function getContributorLevel(address _account) public view returns (uint256) {
-
-		uint256 point =  contributorsData[_account].reputationPoints;
+	function getContributorLevel(
+		address _account
+	) public view returns (uint256) {
+		uint256 point = contributorsData[_account].reputationPoints;
 		return calculateLevel(point);
 	}
 
@@ -359,7 +382,12 @@ contract RacksProjectManager is
 	 * @notice Get total number of contributors
 	 * @dev Only callable by Holders
 	 */
-	function getNumberOfContributors() external view onlyHolder returns (uint256) {
+	function getNumberOfContributors()
+		external
+		view
+		onlyHolder
+		returns (uint256)
+	{
 		return contributors.length;
 	}
 
