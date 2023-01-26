@@ -46,7 +46,7 @@ contract Project is Ownable, AccessControl {
 	uint256 private totalAmountFunded;
 	address[] public funders;
 	ProjectState private projectState;
-	IERC20 private immutable racksPM_ERC20;
+	IERC20 private immutable erc20racksPM;
 
 	/**
 	 *  @notice Check that the project has no contributors, therefore is editable
@@ -95,11 +95,11 @@ contract Project is Ownable, AccessControl {
 	}
 
 	/// Events
-	event newProjectContributorsRegistered(
+	event NewProjectContributorsRegistered(
 		address projectAddress,
 		address newProjectContributor
 	);
-	event projectFunded(
+	event ProjectFunded(
 		address projectAddress,
 		address funderWallet,
 		uint256 amount
@@ -127,7 +127,7 @@ contract Project is Ownable, AccessControl {
 		maxContributorsNumber = _maxContributorsNumber;
 		_setupRole(ADMIN_ROLE, msg.sender);
 		_setupRole(ADMIN_ROLE, _racksPM.getRacksPMOwner());
-		racksPM_ERC20 = _racksPM.getERC20Interface();
+		erc20racksPM = _racksPM.getERC20Interface();
 		projectState = PENDING;
 	}
 
@@ -167,9 +167,9 @@ contract Project is Ownable, AccessControl {
 		contributorList.pushFront(progressiveId);
 		contributorId[contributor.wallet] = progressiveId;
 
-		emit newProjectContributorsRegistered(address(this), msg.sender);
+		emit NewProjectContributorsRegistered(address(this), msg.sender);
 		if (colateralCost > 0) {
-			bool success = racksPM_ERC20.transferFrom(
+			bool success = erc20racksPM.transferFrom(
 				msg.sender,
 				address(this),
 				colateralCost
@@ -232,7 +232,7 @@ contract Project is Ownable, AccessControl {
 				);
 
 				if (colateralCost > 0) {
-					bool success = racksPM_ERC20.transfer(
+					bool success = erc20racksPM.transfer(
 						contrAddress,
 						colateralCost
 					);
@@ -242,7 +242,7 @@ contract Project is Ownable, AccessControl {
 				(existNext, i) = contributorList.getNextNode(i);
 			}
 		}
-		if (racksPM_ERC20.balanceOf(address(this)) > 0) shareProfits();
+		if (erc20racksPM.balanceOf(address(this)) > 0) shareProfits();
 	}
 
 	/**
@@ -259,8 +259,8 @@ contract Project is Ownable, AccessControl {
 		totalAmountFunded += _amount;
 		projectFunds[msg.sender] += _amount;
 		funders.push(msg.sender);
-		emit projectFunded(address(this), msg.sender, _amount);
-		bool success = racksPM_ERC20.transferFrom(
+		emit ProjectFunded(address(this), msg.sender, _amount);
+		bool success = erc20racksPM.transferFrom(
 			msg.sender,
 			address(this),
 			_amount
@@ -283,7 +283,7 @@ contract Project is Ownable, AccessControl {
 
 		if (
 			address(this).balance <= 0 &&
-			racksPM_ERC20.balanceOf(address(this)) <= 0
+			erc20racksPM.balanceOf(address(this)) <= 0
 		) revert noFundsGiveAwayErr();
 
 		shareProfits();
@@ -301,7 +301,7 @@ contract Project is Ownable, AccessControl {
 		if (projectState != ProjectState.Finished) revert notCompletedErr();
 
 		unchecked {
-			uint256 projectBalanceERC20 = racksPM_ERC20.balanceOf(
+			uint256 projectBalanceERC20 = erc20racksPM.balanceOf(
 				address(this)
 			);
 			uint256 projectBalanceEther = address(this).balance;
@@ -309,8 +309,8 @@ contract Project is Ownable, AccessControl {
 
 			while (i != 0 && existNext) {
 				address contrAddress = projectContributors[i].wallet;
-				if (racksPM_ERC20.balanceOf(address(this)) > 0) {
-					bool successTransfer = racksPM_ERC20.transfer(
+				if (erc20racksPM.balanceOf(address(this)) > 0) {
+					bool successTransfer = erc20racksPM.transfer(
 						contrAddress,
 						(projectBalanceERC20 *
 							participationOfContributors[contrAddress]) / 100
@@ -348,7 +348,7 @@ contract Project is Ownable, AccessControl {
 
 		racksPM.deleteProject();
 
-		if (racksPM_ERC20.balanceOf(address(this)) > 0) {
+		if (erc20racksPM.balanceOf(address(this)) > 0) {
 			unchecked {
 				// Return funds to funders
 				for (uint256 i = 0; i < funders.length; i++) {
@@ -358,7 +358,7 @@ contract Project is Ownable, AccessControl {
 					if (amount > 0) {
 						projectFunds[funder] = 0;
 						totalAmountFunded -= amount;
-						bool successTransfer = racksPM_ERC20.transfer(
+						bool successTransfer = erc20racksPM.transfer(
 							funder,
 							amount
 						);
@@ -385,7 +385,7 @@ contract Project is Ownable, AccessControl {
 		contributorList.remove(id);
 
 		if (_returnColateral && colateralCost > 0) {
-			bool success = racksPM_ERC20.transfer(_contributor, colateralCost);
+			bool success = erc20racksPM.transfer(_contributor, colateralCost);
 			if (!success) revert erc20TransferFailed();
 		}
 	}

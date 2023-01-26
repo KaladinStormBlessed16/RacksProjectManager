@@ -14,12 +14,12 @@ interface IRacksProjectManager {
 	/**
 	 * @notice Event emitted when a new contributor is registered in RacksProjectManager
 	 */
-	event newContributorRegistered(address newContributor);
+	event NewContributorRegistered(address newContributor);
 
 	/**
 	 * @notice Event emitted when a new project is created in RacksProjectsManager
 	 */
-	event newProjectCreated(string name, address newProjectAddress);
+	event NewProjectCreated(string name, address newProjectAddress);
 
 	/////////////////////////////
 	///   Abstract functions  ///

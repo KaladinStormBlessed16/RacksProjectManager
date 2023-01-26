@@ -50,7 +50,7 @@ contract RacksProjectManager is
 	bytes32 private constant ADMIN_ROLE = 0x00;
 	address[] private contributors;
 	bool private paused;
-	uint256 progressiveId;
+	uint256 private progressiveId;
 
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private projectsList;
@@ -147,7 +147,7 @@ contract RacksProjectManager is
 		projectsList.pushFront(progressiveId);
 
 		_setupRole(ADMIN_ROLE, address(newProject));
-		emit newProjectCreated(_name, address(newProject));
+		emit NewProjectCreated(_name, address(newProject));
 	}
 
 	/**
@@ -160,7 +160,7 @@ contract RacksProjectManager is
 
 		contributors.push(msg.sender);
 		contributorsData[msg.sender] = Contributor(msg.sender, 0, false);
-		emit newContributorRegistered(msg.sender);
+		emit NewContributorRegistered(msg.sender);
 	}
 
 	///////////////////////
@@ -406,7 +406,7 @@ contract RacksProjectManager is
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
-		require(id > 0);
+		if (id == 0) revert invalidParameterErr();
 
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);

@@ -9,7 +9,7 @@ import "./Err.sol";
 
 contract HolderValidation is IHolderValidation, Ownable {
 	/// @notice State variables
-	uint256 progressiveId;
+	uint256 private progressiveId;
 
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private collectionsList;
@@ -66,7 +66,7 @@ contract HolderValidation is IHolderValidation, Ownable {
 	function deleteCollection(address _deleteCollection) external onlyOwner {
 		uint256 id = collectionId[_deleteCollection];
 
-		require(id != 0);
+		if (id == 0) revert invalidParameterErr();
 
 		collectionId[msg.sender] = 0;
 		collectionsList.remove(id);
