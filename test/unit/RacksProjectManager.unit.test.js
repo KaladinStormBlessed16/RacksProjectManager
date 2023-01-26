@@ -236,8 +236,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					// set level of contributor to lvl 2
 					await racksPM.setAccountToContributorData(user1.address, [
 						user1.address,
-						2,
-						0,
+						100, // 100 points --> lvl 2
 						false,
 					]);
 
