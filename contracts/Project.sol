@@ -192,7 +192,6 @@ contract Project is Ownable, AccessControl {
 					participationOfContributors[contrAddress]) / 100;
 
 				racksPM.modifyContributorRP(contrAddress, reputationToIncrease, true);
-				racksPM.setAccountToContributorData(contrAddress, projectContributors[i]);
 
 				if (colateralCost > 0) {
 					bool success = racksPM_ERC20.transfer(contrAddress, colateralCost);

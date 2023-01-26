@@ -402,13 +402,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					const pcUser1 = await racksPM.getContributorData(user1.address);
 					const pcUser2 = await racksPM.getContributorData(user2.address);
+					const lvlUser1 = await racksPM.getContributorLevel(user1.address);
+					const lvlUser2 = await racksPM.getContributorLevel(user2.address);
 
 					expect(pcUser1.wallet).to.be.equal(user1.address);
-					expect(pcUser1.reputationLevel).to.be.equal(2);
-					expect(pcUser1.reputationPoints).to.be.equal(50);
+					expect(lvlUser1).to.be.equal(2);
+					expect(pcUser1.reputationPoints).to.be.equal(150);
 					expect(pcUser2.wallet).to.be.equal(user2.address);
-					expect(pcUser2.reputationLevel).to.be.equal(3);
-					expect(pcUser2.reputationPoints).to.be.equal(50);
+					expect(lvlUser2).to.be.equal(3);
+					expect(pcUser2.reputationPoints).to.be.equal(350);
 				});
 
 				it("Should finish a project, create a new project, finish that project with a banned Contributor and withdraw the banned's lost colateral", async () => {
