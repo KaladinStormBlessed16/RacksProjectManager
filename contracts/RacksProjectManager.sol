@@ -221,26 +221,24 @@ contract RacksProjectManager is
 
 	/**
 	 * @notice Increase Contributor's Reputation Points if
-	 * @param add is true, otherwise it reduces
-	 * @param grossReputationPoints is the amount of reputation points to increse or decrease
+	 * @param _grossReputationPoints is the amount of reputation points to increase or decrease
+	 * @param _add is true, otherwise it reduces
 	 */
 	function modifyContributorRP(
 		address _account,
-		uint256 grossReputationPoints,
-		bool add
+		uint256 _grossReputationPoints,
+		bool _add
 	) public override onlyAdmin {
-		if (grossReputationPoints <= 0) revert invalidParameterErr();
+		if (_grossReputationPoints <= 0) revert invalidParameterErr();
+
 		Contributor memory contributor = contributorsData[_account];
 
-		if (add) {
-			grossReputationPoints += contributor.reputationPoints;
+		if (_add) {
+			contributor.reputationPoints += _grossReputationPoints;
 		} else {
-			grossReputationPoints =
-				contributor.reputationPoints -
-				grossReputationPoints;
+			contributor.reputationPoints -= _grossReputationPoints;
 		}
 
-		contributor.reputationPoints = grossReputationPoints;
 		contributorsData[_account] = contributor;
 	}
 
