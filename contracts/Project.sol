@@ -135,7 +135,8 @@ contract Project is Ownable, AccessControl {
 		Contributor memory contributor = racksPM.getContributorData(msg.sender);
 
 		if (racksPM.isContributorBanned(contributor.wallet)) revert projectContributorIsBannedErr();
-		if (contributor.reputationLevel < reputationLevel)
+
+		if (racksPM.calculateLevel(contributor.reputationPoints) < reputationLevel)
 			revert projectContributorHasNoReputationEnoughErr();
 
 		progressiveId++;
@@ -190,7 +191,7 @@ contract Project is Ownable, AccessControl {
 				uint256 reputationToIncrease = (_totalReputationPointsReward *
 					participationOfContributors[contrAddress]) / 100;
 
-				increaseContributorReputation(reputationToIncrease, i);
+				racksPM.modifyContributorRP(contrAddress, reputationToIncrease, true);
 				racksPM.setAccountToContributorData(contrAddress, projectContributors[i]);
 
 				if (colateralCost > 0) {
@@ -270,27 +271,6 @@ contract Project is Ownable, AccessControl {
 		}
 	}
 
-	/**
-	 * @notice Increase Contributor's reputation
-	 * @dev Only callable by Admins internally
-	 */
-	function increaseContributorReputation(
-		uint256 _reputationPointsReward,
-		uint256 _index
-	) private onlyAdmin isNotDeleted {
-		unchecked {
-			Contributor memory _contributor = projectContributors[_index];
-			uint256 grossReputationPoints = _contributor.reputationPoints + _reputationPointsReward;
-
-			while (grossReputationPoints >= (_contributor.reputationLevel * 100)) {
-				grossReputationPoints -= (_contributor.reputationLevel * 100);
-				_contributor.reputationLevel++;
-				_contributor.reputationPoints = 0;
-			}
-			_contributor.reputationPoints = grossReputationPoints;
-			projectContributors[_index] = _contributor;
-		}
-	}
 
 	/**
 	 * @notice Provides information about supported interfaces (required by AccessControl)

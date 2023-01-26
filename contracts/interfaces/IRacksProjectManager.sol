@@ -73,4 +73,8 @@ interface IRacksProjectManager {
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function deleteProject() external;
+
+	function calculateLevel(uint256 totalPoints) external returns (uint256);
+
+	function modifyContributorRP( address _account, uint256 grossReputationPoints, bool add)  external;
 }
