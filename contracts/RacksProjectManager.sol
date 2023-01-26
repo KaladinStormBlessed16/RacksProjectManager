@@ -194,7 +194,12 @@ contract RacksProjectManager is
 		contributorsData[_account] = _newData;
 	}
 
-	/// Increase Contributor's Reputation Points
+	///
+	/**
+	 * @notice Increase Contributor's Reputation Points if
+	 * @param add is true, otherwise it reduces
+	 * @param grossReputationPoints is the amount of reputation points to increse or decrease
+	 */
 	function modifyContributorRP(
 		address _account,
 		uint256 grossReputationPoints,
