@@ -748,7 +748,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.connect(user2)
 						.fundProject(ethers.utils.parseEther("500"));
 					const rc = await tx.wait();
-					const event = rc.events.find((e) => e.event == "projectFunded").args;
+					const event = rc.events.find((e) => e.event == "ProjectFunded").args;
 					expect(event).to.exist;
 					expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("500")

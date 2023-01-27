@@ -35,7 +35,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				);
 				const rc = await tx.wait();
 				const { newProjectAddress } = rc.events.find(
-					(e) => e.event == "newProjectCreated"
+					(e) => e.event == "NewProjectCreated"
 				).args;
 
 				project1 = await ethers.getContractAt("Project", newProjectAddress);
@@ -91,7 +91,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					const rc = await tx.wait();
 					const { newProjectAddress: project2Address } = rc.events.find(
-						(e) => e.event == "newProjectCreated"
+						(e) => e.event == "NewProjectCreated"
 					).args;
 					const project2 = await ethers.getContractAt("Project", project2Address);
 					await project2.approveProject();
