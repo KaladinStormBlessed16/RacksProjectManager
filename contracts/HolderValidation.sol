@@ -56,7 +56,7 @@ contract HolderValidation is IHolderValidation, Ownable {
 		collectionId[address(_newCollection)] = progressiveId;
 		collectionsList.pushFront(progressiveId);
 
-		emit newCollectionAdded(_newCollection);
+		emit NewCollectionAdded(_newCollection);
 	}
 
 	/**
