@@ -15,14 +15,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 				const Proxy = await ethers.getContract("TransparentUpgradeableProxy");
 				const RacksPMContract = await ethers.getContract("RacksProjectManager");
-				const ProxyImplementation = await RacksPMContract.attach(Proxy.address);
-				racksPM = await ProxyImplementation.connect(deployer);
+				const ProxyImplementation = RacksPMContract.attach(Proxy.address);
+				racksPM = ProxyImplementation.connect(deployer);
 
 				let mrcContract = await ethers.getContract("MRCRYPTO");
-				mrc = await mrcContract.connect(deployer);
+				mrc = mrcContract.connect(deployer);
 
 				let erc20Contract = await ethers.getContract("MockErc20");
-				erc20 = await erc20Contract.connect(deployer);
+				erc20 = erc20Contract.connect(deployer);
 
 				await racksPM.createProject("Project1", ethers.utils.parseEther("100"), 1, 2);
 				const projectAddress = await (await racksPM.getProjects())[0];
@@ -203,38 +203,38 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await racksPM.modifyContributorRP(user1.address, 150, true);
 					let contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 2);
-					assert.equal(contr.reputationPoints.toString(), 50);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 2);
+					assert.equal(contr.reputationPoints.toString(), 150);
 
 					await racksPM.modifyContributorRP(user1.address, 100, false);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 1);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 1);
 					assert.equal(contr.reputationPoints.toString(), 50);
 
 					await racksPM.modifyContributorRP(user1.address, 20, false);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 1);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 1);
 					assert.equal(contr.reputationPoints.toString(), 30);
 
 					await racksPM.modifyContributorRP(user1.address, 100, true);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 2);
-					assert.equal(contr.reputationPoints.toString(), 30);
-
-					await racksPM.modifyContributorRP(user1.address, 100, true);
-					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 2);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 2);
 					assert.equal(contr.reputationPoints.toString(), 130);
+
+					await racksPM.modifyContributorRP(user1.address, 100, true);
+					contr = await racksPM.getContributorData(user1.address);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 3);
+					assert.equal(contr.reputationPoints.toString(), 230);
 
 					await racksPM.modifyContributorRP(user1.address, 120, true);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 3);
-					assert.equal(contr.reputationPoints.toString(), 50);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 3);
+					assert.equal(contr.reputationPoints.toString(), 350);
 
 					await racksPM.modifyContributorRP(user1.address, 690, true);
 					contr = await racksPM.getContributorData(user1.address);
-					assert.equal(contr.reputationLevel.toString(), 5);
-					assert.equal(contr.reputationPoints.toString(), 40);
+					assert.equal(await racksPM.getContributorLevel(user1.address), 5);
+					assert.equal(contr.reputationPoints.toString(), 690 + 350);
 				});
 			});
 
@@ -402,13 +402,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					const pcUser1 = await racksPM.getContributorData(user1.address);
 					const pcUser2 = await racksPM.getContributorData(user2.address);
+					const lvlUser1 = await racksPM.getContributorLevel(user1.address);
+					const lvlUser2 = await racksPM.getContributorLevel(user2.address);
 
 					expect(pcUser1.wallet).to.be.equal(user1.address);
-					expect(pcUser1.reputationLevel).to.be.equal(2);
-					expect(pcUser1.reputationPoints).to.be.equal(50);
+					expect(lvlUser1).to.be.equal(2);
+					expect(pcUser1.reputationPoints).to.be.equal(150);
 					expect(pcUser2.wallet).to.be.equal(user2.address);
-					expect(pcUser2.reputationLevel).to.be.equal(3);
-					expect(pcUser2.reputationPoints).to.be.equal(50);
+					expect(lvlUser2).to.be.equal(3);
+					expect(pcUser2.reputationPoints).to.be.equal(350);
 				});
 
 				it("Should finish a project, create a new project, finish that project with a banned Contributor and withdraw the banned's lost colateral", async () => {
@@ -465,8 +467,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await project2Contract.connect(user2).registerProjectContributor();
 
 					const pcUser22 = await racksPM.getContributorData(user2.address);
-					expect(pcUser22.reputationLevel).to.be.equal(3);
-					expect(pcUser22.reputationPoints).to.be.equal(50);
+					const lvlUser22 = await racksPM.getContributorLevel(user2.address);
+
+					expect(lvlUser22).to.be.equal(3);
+					expect(pcUser22.reputationPoints).to.be.equal(350);
 
 					await project2Contract.finishProject(
 						500,
@@ -493,15 +497,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					const pcUser2 = await racksPM.getContributorData(user2.address);
 
 					expect(pcUserBanned.wallet).to.be.equal(user3.address);
-					expect(pcUserBanned.reputationLevel).to.be.equal(1);
 					expect(pcUserBanned.reputationPoints).to.be.equal(0);
 
 					expect(pcUser1.wallet).to.be.equal(user1.address);
-					expect(pcUser1.reputationLevel).to.be.equal(3);
-					expect(pcUser1.reputationPoints).to.be.equal(25);
+					expect(await racksPM.getContributorLevel(user1.address)).to.be.equal(3);
+					expect(pcUser1.reputationPoints).to.be.equal(325);
 					expect(pcUser2.wallet).to.be.equal(user2.address);
-					expect(pcUser2.reputationLevel).to.be.equal(4);
-					expect(pcUser2.reputationPoints).to.be.equal(75);
+					expect(await racksPM.getContributorLevel(user2.address)).to.be.equal(4);
+					expect(pcUser2.reputationPoints).to.be.equal(675);
 				});
 				it("Should revert if the smart contract is paused", async () => {
 					await mrc.connect(user1).mint(1);
@@ -745,12 +748,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.connect(user2)
 						.fundProject(ethers.utils.parseEther("500"));
 					const rc = await tx.wait();
-					const event = rc.events.find((e) => e.event == "projectFunded").args;
-					await expect(event).to.exist;
-					await expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
+					const event = rc.events.find((e) => e.event == "ProjectFunded").args;
+					expect(event).to.exist;
+					expect(await projectContract.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
-					await expect(await projectContract.getTotalAmountFunded()).to.be.equal(
+					expect(await projectContract.getTotalAmountFunded()).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
 				});

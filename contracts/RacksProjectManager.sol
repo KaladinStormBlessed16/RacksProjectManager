@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-// @author KaladinStormblessed16 and Daniel Sintimbrean
+
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -9,39 +9,48 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IRacksProjectManager.sol";
 import "./interfaces/IHolderValidation.sol";
 import "./Project.sol";
-import "./Contributor.sol";
 import "./Err.sol";
 import "./library/StructuredLinkedList.sol";
+import "./library/Math.sol";
 
-//              ▟██████████   █████    ▟███████████   █████████████
-//            ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
-//           ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
-//            ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
-//              ▀     █████   █████████▛      █████     ▟██████▛
-//                    █████   ███████▛      ▟█████▛   ▟██████▛
-//   ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
-//  ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
-// ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
-//                        ▜██████▙            ▟██████▛          ┌────────┐
-//                          ▜██████▙        ▟██████▛            │  LABS  │
-//                                                                 └────────┘
+/**
+ * 
+ *               ▟██████████   █████    ▟███████████   █████████████
+ *             ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
+ *            ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
+ *             ▜██▛    █████   ███████████▛    █████       ▟██████▛    █████████▛
+ *               ▀     █████   █████████▛      █████     ▟██████▛
+ *                     █████   ███████▛      ▟█████▛   ▟██████▛
+ *    ▟█████████████   ██████              ▟█████▛   ▟██████▛   ▟███████████████▙
+ *   ▟██████████████   ▜██████▙          ▟█████▛   ▟██████▛   ▟██████████████████▙
+ *  ▟███████████████     ▜██████▙      ▟█████▛   ▟██████▛   ▟█████████████████████▙
+ *                         ▜██████▙            ▟██████▛          ┌────────┐
+ *                           ▜██████▙        ▟██████▛            │  LABS  │
+ *                                                               └────────┘
+ */
 
+/**
+ * @title RacksProjectManager
+ * @author KaladinStormblessed16 and Daniel Sintimbrean
+ * 
+ * Powered by RacksLabs
+ */
 contract RacksProjectManager is
 	IRacksProjectManager,
 	Initializable,
 	OwnableUpgradeable,
 	AccessControlUpgradeable
 {
-	/// @notice interfaces
+	/// interfaces
 	/// @custom:oz-upgrades-unsafe-allow state-variable-immutable
 	IHolderValidation private immutable holderValidation;
 	IERC20 private erc20;
 
-	/// @notice State variables
+	/// State variables
 	bytes32 private constant ADMIN_ROLE = 0x00;
 	address[] private contributors;
 	bool private paused;
-	uint256 progressiveId;
+	uint256 private progressiveId;
 
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private projectsList;
@@ -51,20 +60,28 @@ contract RacksProjectManager is
 	mapping(address => uint256) private projectId;
 	mapping(address => Contributor) private contributorsData;
 
-	/// @notice Check that user is Admin
+	/**
+	 * @dev Only callable by Admins
+	 */
 	modifier onlyAdmin() {
 		if (!hasRole(ADMIN_ROLE, msg.sender)) revert adminErr();
 		_;
 	}
 
-	/// @notice Check that user is Holder or Admin
+	/**
+	 * @dev Only callable by Holders or Admins
+	 */
 	modifier onlyHolder() {
-		if (holderValidation.isHolder(msg.sender) == address(0) && !hasRole(ADMIN_ROLE, msg.sender))
-			revert holderErr();
+		if (
+			holderValidation.isHolder(msg.sender) == address(0) &&
+			!hasRole(ADMIN_ROLE, msg.sender)
+		) revert holderErr();
 		_;
 	}
 
-	/// @notice Check that the smart contract is not paused
+	/**
+	 * @dev Only callable when contract is not paused
+	 */
 	modifier isNotPaused() {
 		if (paused) revert pausedErr();
 		_;
@@ -73,7 +90,11 @@ contract RacksProjectManager is
 	///////////////////
 	//   Constructor //
 	///////////////////
+
 	/// @custom:oz-upgrades-unsafe-allow constructor
+	/**
+	 * @param _holderValidation Address of the contract that validates the holders
+	 */
 	constructor(IHolderValidation _holderValidation) {
 		holderValidation = _holderValidation;
 	}
@@ -81,6 +102,9 @@ contract RacksProjectManager is
 	///////////////////
 	//   Initialize  //
 	///////////////////
+	/**
+	 * @param _erc20 Address of the ERC20 token
+	 */
 	function initialize(IERC20 _erc20) external initializer {
 		erc20 = _erc20;
 		__Ownable_init();
@@ -123,7 +147,7 @@ contract RacksProjectManager is
 		projectsList.pushFront(progressiveId);
 
 		_setupRole(ADMIN_ROLE, address(newProject));
-		emit newProjectCreated(_name, address(newProject));
+		emit NewProjectCreated(_name, address(newProject));
 	}
 
 	/**
@@ -131,11 +155,12 @@ contract RacksProjectManager is
 	 * @dev Only callable by Holders who are not already Contributors
 	 */
 	function registerContributor() external onlyHolder isNotPaused {
-		if (isWalletContributor(msg.sender)) revert contributorAlreadyExistsErr();
+		if (isWalletContributor(msg.sender))
+			revert contributorAlreadyExistsErr();
 
 		contributors.push(msg.sender);
-		contributorsData[msg.sender] = Contributor(msg.sender, 1, 0, false);
-		emit newContributorRegistered(msg.sender);
+		contributorsData[msg.sender] = Contributor(msg.sender, 0, false);
+		emit NewContributorRegistered(msg.sender);
 	}
 
 	///////////////////////
@@ -170,7 +195,10 @@ contract RacksProjectManager is
 	 * @notice Set a ban state for a Contributor
 	 * @dev Only callable by Admins.
 	 */
-	function setContributorStateToBanList(address _account, bool _state) external onlyAdmin {
+	function setContributorStateToBanList(
+		address _account,
+		bool _state
+	) external onlyAdmin {
 		accountIsBanned[_account] = _state;
 
 		if (_state == true) {
@@ -178,7 +206,10 @@ contract RacksProjectManager is
 
 			while (i != 0 && existNext) {
 				Project project = projectStore[i];
-				if (project.isActive() && project.isContributorInProject(_account)) {
+				if (
+					project.isActive() &&
+					project.isContributorInProject(_account)
+				) {
 					project.removeContributor(_account, false);
 				}
 				(existNext, i) = projectsList.getNextNode(i);
@@ -186,7 +217,9 @@ contract RacksProjectManager is
 		}
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */
 	function setAccountToContributorData(
 		address _account,
 		Contributor memory _newData
@@ -194,46 +227,60 @@ contract RacksProjectManager is
 		contributorsData[_account] = _newData;
 	}
 
-	///
 	/**
 	 * @notice Increase Contributor's Reputation Points if
-	 * @param add is true, otherwise it reduces
-	 * @param grossReputationPoints is the amount of reputation points to increse or decrease
+	 * @param _grossReputationPoints is the amount of reputation points to increase or decrease
+	 * @param _add is true, otherwise it reduces
 	 */
 	function modifyContributorRP(
 		address _account,
-		uint256 grossReputationPoints,
-		bool add
-	) public onlyAdmin {
-		if (grossReputationPoints <= 0) revert invalidParameterErr();
+		uint256 _grossReputationPoints,
+		bool _add
+	) public override onlyAdmin {
+		if (_grossReputationPoints <= 0) revert invalidParameterErr();
+
 		Contributor memory contributor = contributorsData[_account];
 
-		if (add) {
-			grossReputationPoints += contributor.reputationPoints;
-			while (grossReputationPoints >= (contributor.reputationLevel * 100)) {
-				grossReputationPoints -= contributor.reputationLevel * 100;
-				contributor.reputationLevel++;
-				contributor.reputationPoints = 0;
-			}
-			contributor.reputationPoints = grossReputationPoints;
+		if (_add) {
+			contributor.reputationPoints += _grossReputationPoints;
 		} else {
-			while (grossReputationPoints > 0) {
-				if (grossReputationPoints >= contributor.reputationPoints) {
-					contributor.reputationLevel--;
-					grossReputationPoints -= contributor.reputationPoints;
-					contributor.reputationPoints = (contributor.reputationLevel * 100);
-				} else {
-					contributor.reputationPoints -= grossReputationPoints;
-					grossReputationPoints = 0;
-				}
-			}
+			contributor.reputationPoints -= _grossReputationPoints;
 		}
 
 		contributorsData[_account] = contributor;
 	}
 
+	/**
+	 * @notice Set new paused state
+	 * @param _newPausedValue New paused state
+	 */
 	function setIsPaused(bool _newPausedValue) public onlyAdmin {
 		paused = _newPausedValue;
+	}
+
+	/**
+	 * @notice Return the the level of a Contributor based on the total reputation points
+	 * @dev The level is calculated based on the lazy caterer's sequence
+	 * @dev Example :
+	 *  0    points -> level 1
+	 * 	100  points -> level 2
+	 * 	200  points -> level 3
+	 * 	400  points -> level 4
+	 * 	700  points -> level 5
+	 * 	1100 points -> level 6
+	 * 	1600 points -> level 7
+	 * 	2200 points -> level 8
+	 * 	2900 points -> level 9
+	 * 	3700 points -> level 10
+	 * @param totalPoints Total Reputation Points of a Contributor
+	 */
+	function calculateLevel(
+		uint256 totalPoints
+	) public pure override returns (uint256) {
+		if (totalPoints < 100) return 1;
+
+		uint256 points = totalPoints / 100;
+		return ((MathLib.sqrt(8 * points - 7) - 1) / 2) + 2;
 	}
 
 	////////////////////////
@@ -246,7 +293,11 @@ contract RacksProjectManager is
 	}
 
 	/// @notice Returns Holder Validation contract address
-	function getHolderValidationInterface() external view returns (IHolderValidation) {
+	function getHolderValidationInterface()
+		external
+		view
+		returns (IHolderValidation)
+	{
 		return holderValidation;
 	}
 
@@ -261,7 +312,9 @@ contract RacksProjectManager is
 	}
 
 	/// @inheritdoc IRacksProjectManager
-	function isContributorBanned(address _account) external view override returns (bool) {
+	function isContributorBanned(
+		address _account
+	) external view override returns (bool) {
 		return accountIsBanned[_account];
 	}
 
@@ -271,17 +324,20 @@ contract RacksProjectManager is
 	 */
 	function getProjects() public view onlyHolder returns (Project[] memory) {
 		if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProjects();
-		Project[] memory filteredProjects = new Project[](projectsList.sizeOf());
+		Project[] memory filteredProjects = new Project[](
+			projectsList.sizeOf()
+		);
 
 		unchecked {
-			uint256 callerReputationLv = isWalletContributor(msg.sender)
-				? contributorsData[msg.sender].reputationLevel
-				: 1;
+			uint256 callerReputationLv = getContributorLevel(msg.sender);
+
 			uint256 j = 0;
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
 			while (i != 0 && existNext) {
-				if (projectStore[i].getReputationLevel() <= callerReputationLv) {
+				if (
+					projectStore[i].getReputationLevel() <= callerReputationLv
+				) {
 					filteredProjects[j] = projectStore[i];
 					j++;
 				}
@@ -308,8 +364,17 @@ contract RacksProjectManager is
 	}
 
 	/// @inheritdoc IRacksProjectManager
-	function isWalletContributor(address _account) public view override returns (bool) {
+	function isWalletContributor(
+		address _account
+	) public view override returns (bool) {
 		return contributorsData[_account].wallet != address(0);
+	}
+
+	function getContributorLevel(
+		address _account
+	) public view returns (uint256) {
+		uint256 point = contributorsData[_account].reputationPoints;
+		return calculateLevel(point);
 	}
 
 	/// @inheritdoc IRacksProjectManager
@@ -323,7 +388,12 @@ contract RacksProjectManager is
 	 * @notice Get total number of contributors
 	 * @dev Only callable by Holders
 	 */
-	function getNumberOfContributors() external view onlyHolder returns (uint256) {
+	function getNumberOfContributors()
+		external
+		view
+		onlyHolder
+		returns (uint256)
+	{
 		return contributors.length;
 	}
 
@@ -336,7 +406,7 @@ contract RacksProjectManager is
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
-		require(id > 0);
+		if (id == 0) revert invalidParameterErr();
 
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);

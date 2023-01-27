@@ -4,10 +4,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IHolderValidation.sol";
-import "../Project.sol";
 import "../Contributor.sol";
-import "../Err.sol";
 
 interface IRacksProjectManager {
 	/////////////////
@@ -17,12 +14,12 @@ interface IRacksProjectManager {
 	/**
 	 * @notice Event emitted when a new contributor is registered in RacksProjectManager
 	 */
-	event newContributorRegistered(address newContributor);
+	event NewContributorRegistered(address newContributor);
 
 	/**
 	 * @notice Event emitted when a new project is created in RacksProjectsManager
 	 */
-	event newProjectCreated(string name, address newProjectAddress);
+	event NewProjectCreated(string name, address newProjectAddress);
 
 	/////////////////////////////
 	///   Abstract functions  ///
@@ -56,12 +53,17 @@ interface IRacksProjectManager {
 	/**
 	 * @notice Returns all the data associated with @param _account contributor
 	 */
-	function getContributorData(address _account) external view returns (Contributor memory);
+	function getContributorData(
+		address _account
+	) external view returns (Contributor memory);
 
 	/**
 	 * @notice Update contributor data associated with @param _account contributor
 	 */
-	function setAccountToContributorData(address _account, Contributor memory _newData) external;
+	function setAccountToContributorData(
+		address _account,
+		Contributor memory _newData
+	) external;
 
 	/**
 	 * @notice Return true if the RacksProjectsManager is paused, otherwise false
@@ -73,4 +75,12 @@ interface IRacksProjectManager {
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function deleteProject() external;
+
+	function calculateLevel(uint256 totalPoints) external returns (uint256);
+
+	function modifyContributorRP(
+		address _account,
+		uint256 grossReputationPoints,
+		bool add
+	) external;
 }

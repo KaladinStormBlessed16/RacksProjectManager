@@ -14,18 +14,18 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				await deployments.fixture(["rackspm", "mocks", "proxy"]);
 
 				const mrcContract = await ethers.getContract("MRCRYPTO");
-				mrc = await mrcContract.connect(deployer);
+				mrc = mrcContract.connect(deployer);
 
 				const erc20Contract = await ethers.getContract("MockErc20");
-				erc20 = await erc20Contract.connect(deployer);
+				erc20 = erc20Contract.connect(deployer);
 
 				const holderValContract = await ethers.getContract("HolderValidation");
-				holderValidation = await holderValContract.connect(deployer);
+				holderValidation = holderValContract.connect(deployer);
 
 				const Proxy = await ethers.getContract("TransparentUpgradeableProxy");
 				const RacksPMContract = await ethers.getContract("RacksProjectManager");
-				const ProxyImplementation = await RacksPMContract.attach(Proxy.address);
-				racksPM = await ProxyImplementation.connect(deployer);
+				const ProxyImplementation = RacksPMContract.attach(Proxy.address);
+				racksPM = ProxyImplementation.connect(deployer);
 
 				const tx = await racksPM.createProject(
 					"Project1",
@@ -35,22 +35,22 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				);
 				const rc = await tx.wait();
 				const { newProjectAddress } = rc.events.find(
-					(e) => e.event == "newProjectCreated"
+					(e) => e.event == "NewProjectCreated"
 				).args;
 
 				project1 = await ethers.getContractAt("Project", newProjectAddress);
-				project1 = await project1.connect(deployer);
+				project1 = project1.connect(deployer);
 				await project1.approveProject();
 			});
 
 			describe("Setup", () => {
 				it("Should mint ERC20 and MRC", async () => {
 					let balanceOf = await erc20.balanceOf(deployer.address);
-					await expect(balanceOf).to.be.equal(ethers.utils.parseEther("10000"));
+					expect(balanceOf).to.be.equal(ethers.utils.parseEther("10000"));
 
 					await erc20.connect(user1).mintMore();
 					balanceOf = await erc20.balanceOf(user1.address);
-					await expect(balanceOf).to.be.equal(ethers.utils.parseEther("10000"));
+					expect(balanceOf).to.be.equal(ethers.utils.parseEther("10000"));
 
 					await mrc.connect(user1).mint(1);
 					assert((await mrc.balanceOf(user1.address)) == 1);
@@ -91,7 +91,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					const rc = await tx.wait();
 					const { newProjectAddress: project2Address } = rc.events.find(
-						(e) => e.event == "newProjectCreated"
+						(e) => e.event == "NewProjectCreated"
 					).args;
 					const project2 = await ethers.getContractAt("Project", project2Address);
 					await project2.approveProject();
@@ -127,14 +127,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.connect(user2)
 						.fundProject(ethers.utils.parseEther("500"));
 
-					await expect(await project2.getAccountFunds(user2.address)).to.be.equal(
+					expect(await project2.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
-					await expect(await project2.getTotalAmountFunded()).to.be.equal(
+					expect(await project2.getTotalAmountFunded()).to.be.equal(
 						ethers.utils.parseEther("500")
 					);
 					let balanceBefore = await erc20.balanceOf(user2.address);
-					await expect(balanceBefore).to.be.equal(ethers.utils.parseEther("9500"));
+					expect(balanceBefore).to.be.equal(ethers.utils.parseEther("9500"));
 
 					await project2.removeContributor(user1.address, true);
 
@@ -142,14 +142,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await project2.deleteProject();
 
-					await expect(await project2.getAccountFunds(user2.address)).to.be.equal(
+					expect(await project2.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("0")
 					);
-					await expect(await project2.getTotalAmountFunded()).to.be.equal(
+					expect(await project2.getTotalAmountFunded()).to.be.equal(
 						ethers.utils.parseEther("0")
 					);
 					let balanceAfter = await erc20.balanceOf(user2.address);
-					await expect(balanceAfter).to.be.equal(ethers.utils.parseEther("10000"));
+					expect(balanceAfter).to.be.equal(ethers.utils.parseEther("10000"));
 
 					expect(await project2.isActive()).to.be.false;
 					expect(await project2.isDeleted()).to.be.true;
@@ -236,8 +236,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					// set level of contributor to lvl 2
 					await racksPM.setAccountToContributorData(user1.address, [
 						user1.address,
-						2,
-						0,
+						100, // 100 points --> lvl 2
 						false,
 					]);
 

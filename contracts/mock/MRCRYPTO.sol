@@ -98,9 +98,15 @@ contract MRCRYPTO is ERC721Enumerable, Ownable {
 		uint256 supply = totalSupply();
 
 		require(!paused);
-		require(ownerOf(_tokenId) == msg.sender, "you are not the owner of that NFT");
+		require(
+			ownerOf(_tokenId) == msg.sender,
+			"you are not the owner of that NFT"
+		);
 		require(supply + 1 <= totalMaxSupply);
-		require(reservedMints[_tokenId] == false, "Token alredy used to mint at reserved price");
+		require(
+			reservedMints[_tokenId] == false,
+			"Token alredy used to mint at reserved price"
+		);
 
 		if (_tokenId <= 1000) {
 			//require(msg.value >= cost[0]);
@@ -117,7 +123,10 @@ contract MRCRYPTO is ERC721Enumerable, Ownable {
 		}
 	}
 
-	function giveAway(uint256 _mintAmount, address _to) public payable onlyOwner {
+	function giveAway(
+		uint256 _mintAmount,
+		address _to
+	) public payable onlyOwner {
 		uint256 supply = totalSupply();
 
 		require(_mintAmount > 0);
@@ -134,7 +143,9 @@ contract MRCRYPTO is ERC721Enumerable, Ownable {
 		return 2;
 	}
 
-	function walletOfOwner(address _owner) public view returns (uint256[] memory) {
+	function walletOfOwner(
+		address _owner
+	) public view returns (uint256[] memory) {
 		uint256 ownerTokenCount = balanceOf(_owner);
 		uint256[] memory tokenIds = new uint256[](ownerTokenCount);
 		for (uint256 i; i < ownerTokenCount; ++i) {
@@ -147,14 +158,22 @@ contract MRCRYPTO is ERC721Enumerable, Ownable {
 		return reservedMints[_tokenId];
 	}
 
-	function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-		require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+	function tokenURI(
+		uint256 tokenId
+	) public view virtual override returns (string memory) {
+		require(
+			_exists(tokenId),
+			"ERC721Metadata: URI query for nonexistent token"
+		);
 
-		if (revealed == false && tokenId > previousMaxSupply) return notRevealedUri;
+		if (revealed == false && tokenId > previousMaxSupply)
+			return notRevealedUri;
 
 		return
 			bytes(baseURI).length > 0
-				? string(abi.encodePacked(baseURI, tokenId.toString(), baseExtension))
+				? string(
+					abi.encodePacked(baseURI, tokenId.toString(), baseExtension)
+				)
 				: "";
 	}
 
@@ -184,7 +203,9 @@ contract MRCRYPTO is ERC721Enumerable, Ownable {
 		baseURI = _newBaseURI;
 	}
 
-	function setBaseExtension(string memory _newBaseExtension) public onlyOwner {
+	function setBaseExtension(
+		string memory _newBaseExtension
+	) public onlyOwner {
 		baseExtension = _newBaseExtension;
 	}
 
@@ -218,7 +239,8 @@ contract MRCRYPTO is ERC721Enumerable, Ownable {
 	}
 
 	function addToWhitelist(address[] memory wallets) public onlyAdmin {
-		for (uint256 i = 0; i < wallets.length; ++i) isWhitelisted[wallets[i]] = true;
+		for (uint256 i = 0; i < wallets.length; ++i)
+			isWhitelisted[wallets[i]] = true;
 	}
 
 	function addAdmin(address _add) public onlyOwner {

@@ -11,7 +11,7 @@ interface IHolderValidation {
 	/**
 	 * @notice Event emitted when a new collection is authorized in RacksProjectManager
 	 */
-	event newCollectionAdded(IERC721 newCollection);
+	event NewCollectionAdded(IERC721 newCollection);
 
 	/////////////////////////////
 	///   Abstract functions  ///

@@ -25,8 +25,13 @@ library StructuredLinkedList {
 	 * @param _node a node to search for
 	 * @return bool true if node exists, false otherwise
 	 */
-	function nodeExists(List storage self, uint256 _node) internal view returns (bool) {
-		if (self.list[_node][_PREV] == _HEAD && self.list[_node][_NEXT] == _HEAD) {
+	function nodeExists(
+		List storage self,
+		uint256 _node
+	) internal view returns (bool) {
+		if (
+			self.list[_node][_PREV] == _HEAD && self.list[_node][_NEXT] == _HEAD
+		) {
 			if (self.list[_HEAD][_NEXT] == _node) {
 				return true;
 			} else {
@@ -71,7 +76,10 @@ library StructuredLinkedList {
 	 * @param _node id of the node to step from
 	 * @return bool, uint256 true if node exists or false otherwise, next node
 	 */
-	function getNextNode(List storage self, uint256 _node) internal view returns (bool, uint256) {
+	function getNextNode(
+		List storage self,
+		uint256 _node
+	) internal view returns (bool, uint256) {
 		return getAdjacent(self, _node, _NEXT);
 	}
 
@@ -95,7 +103,11 @@ library StructuredLinkedList {
 	 * @param _new  new node to insert
 	 * @return bool true if success, false otherwise
 	 */
-	function insertAfter(List storage self, uint256 _node, uint256 _new) internal returns (bool) {
+	function insertAfter(
+		List storage self,
+		uint256 _node,
+		uint256 _new
+	) internal returns (bool) {
 		return _insert(self, _node, _new, _NEXT);
 	}
 
@@ -106,7 +118,11 @@ library StructuredLinkedList {
 	 * @param _new  new node to insert
 	 * @return bool true if success, false otherwise
 	 */
-	function insertBefore(List storage self, uint256 _node, uint256 _new) internal returns (bool) {
+	function insertBefore(
+		List storage self,
+		uint256 _node,
+		uint256 _new
+	) internal returns (bool) {
 		return _insert(self, _node, _new, _PREV);
 	}
 
@@ -116,11 +132,19 @@ library StructuredLinkedList {
 	 * @param _node node to remove from the list
 	 * @return uint256 the removed node
 	 */
-	function remove(List storage self, uint256 _node) internal returns (uint256) {
+	function remove(
+		List storage self,
+		uint256 _node
+	) internal returns (uint256) {
 		if ((_node == _NULL) || (!nodeExists(self, _node))) {
 			return 0;
 		}
-		_createLink(self, self.list[_node][_PREV], self.list[_node][_NEXT], _NEXT);
+		_createLink(
+			self,
+			self.list[_node][_PREV],
+			self.list[_node][_NEXT],
+			_NEXT
+		);
 		delete self.list[_node][_PREV];
 		delete self.list[_node][_NEXT];
 
@@ -135,7 +159,10 @@ library StructuredLinkedList {
 	 * @param _node new entry to push to the head
 	 * @return bool true if success, false otherwise
 	 */
-	function pushFront(List storage self, uint256 _node) internal returns (bool) {
+	function pushFront(
+		List storage self,
+		uint256 _node
+	) internal returns (bool) {
 		return _push(self, _node, _NEXT);
 	}
 
@@ -145,7 +172,10 @@ library StructuredLinkedList {
 	 * @param _node new entry to push to the tail
 	 * @return bool true if success, false otherwise
 	 */
-	function pushBack(List storage self, uint256 _node) internal returns (bool) {
+	function pushBack(
+		List storage self,
+		uint256 _node
+	) internal returns (bool) {
 		return _push(self, _node, _PREV);
 	}
 
@@ -156,7 +186,11 @@ library StructuredLinkedList {
 	 * @param _direction push to the head (_NEXT) or tail (_PREV)
 	 * @return bool true if success, false otherwise
 	 */
-	function _push(List storage self, uint256 _node, bool _direction) private returns (bool) {
+	function _push(
+		List storage self,
+		uint256 _node,
+		bool _direction
+	) private returns (bool) {
 		return _insert(self, _HEAD, _node, _direction);
 	}
 
@@ -166,7 +200,10 @@ library StructuredLinkedList {
 	 * @param _direction pop from the head (_NEXT) or the tail (_PREV)
 	 * @return uint256 the removed node
 	 */
-	function _pop(List storage self, bool _direction) private returns (uint256) {
+	function _pop(
+		List storage self,
+		bool _direction
+	) private returns (uint256) {
 		uint256 adj;
 		(, adj) = getAdjacent(self, _HEAD, _direction);
 		return remove(self, adj);
@@ -206,7 +243,12 @@ library StructuredLinkedList {
 	 * @param _link node to link to in the _direction
 	 * @param _direction direction to insert node in
 	 */
-	function _createLink(List storage self, uint256 _node, uint256 _link, bool _direction) private {
+	function _createLink(
+		List storage self,
+		uint256 _node,
+		uint256 _link,
+		bool _direction
+	) private {
 		self.list[_link][!_direction] = _node;
 		self.list[_node][_direction] = _link;
 	}
