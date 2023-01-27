@@ -580,9 +580,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 				it("Should revert with Project_NotAdminErr", async () => {
 					// Test not working because of Hardhat bug
-					// await expect(
-					//     projectContract.connect(user1).setColateralCost(100)
-					// ).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
+					await expect(
+						projectContract
+							.connect(user1)
+							.setColateralCost(ethers.utils.parseEther("100"))
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
 						projectContract.connect(user1).setName("Project Updated")
 					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
