@@ -73,7 +73,7 @@ contract RacksProjectManager is
 	 */
 	modifier onlyHolder() {
 		if (
-			holderValidation.isHolder(msg.sender) == address(0) &&
+			!isHolder(msg.sender) &&
 			!hasRole(ADMIN_ROLE, msg.sender)
 		) revert holderErr();
 		_;
@@ -292,7 +292,9 @@ contract RacksProjectManager is
 		return hasRole(ADMIN_ROLE, _account);
 	}
 
-	/// @notice Returns Holder Validation contract address
+	/** 
+	 * @notice Returns Holder Validation contract address
+	 */
 	function getHolderValidationInterface()
 		external
 		view
@@ -301,17 +303,23 @@ contract RacksProjectManager is
 		return holderValidation;
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/** 
+	 * @inheritdoc IRacksProjectManager
+	 */ 
 	function getERC20Interface() public view override returns (IERC20) {
 		return erc20;
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */
 	function getRacksPMOwner() public view override returns (address) {
 		return owner();
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/** 
+	 * @inheritdoc IRacksProjectManager
+	 */
 	function isContributorBanned(
 		address _account
 	) external view override returns (bool) {
@@ -348,6 +356,16 @@ contract RacksProjectManager is
 		return filteredProjects;
 	}
 
+	/** 
+	 * @notice Returns true if _account is have at least one NFT of the collections 
+	 * authorized otherwise returns false
+	 * 
+	 * @param _account Address of the account to check
+	 */
+	function isHolder(address _account) public view returns (bool) {
+		return holderValidation.isHolder(_account) != address(0);
+	}
+
 	function getAllProjects() private view returns (Project[] memory) {
 		Project[] memory allProjects = new Project[](projectsList.sizeOf());
 
@@ -363,13 +381,19 @@ contract RacksProjectManager is
 		return allProjects;
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/** 
+	 * @inheritdoc IRacksProjectManager
+	 */ 
 	function isWalletContributor(
 		address _account
 	) public view override returns (bool) {
 		return contributorsData[_account].wallet != address(0);
 	}
 
+	/**
+	 * @notice Get the level of a Contributor
+	 * @param _account Address of the Contributor
+	 */
 	function getContributorLevel(
 		address _account
 	) public view returns (uint256) {
@@ -377,7 +401,9 @@ contract RacksProjectManager is
 		return calculateLevel(point);
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/** 
+	 * @inheritdoc IRacksProjectManager
+	 */
 	function getContributorData(
 		address _account
 	) public view override returns (Contributor memory) {
@@ -397,12 +423,16 @@ contract RacksProjectManager is
 		return contributors.length;
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
 	function isPaused() external view override returns (bool) {
 		return paused;
 	}
 
-	/// @inheritdoc IRacksProjectManager
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
