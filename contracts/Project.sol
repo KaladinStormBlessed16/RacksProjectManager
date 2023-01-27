@@ -10,7 +10,18 @@ import "./Err.sol";
 import "./library/StructuredLinkedList.sol";
 
 contract Project is Ownable, AccessControl {
-	/// @notice Enumerations
+	/// Events
+	event NewProjectContributorsRegistered(
+		address projectAddress,
+		address newProjectContributor
+	);
+	event ProjectFunded(
+		address projectAddress,
+		address funderWallet,
+		uint256 amount
+	);
+
+	/// Enumerations
 	enum ProjectState {
 		Pending,
 		Active,
@@ -18,17 +29,17 @@ contract Project is Ownable, AccessControl {
 		Deleted
 	}
 
-	/// @notice Constants
+	/// Constants
 	ProjectState private constant PENDING = ProjectState.Pending;
 	ProjectState private constant ACTIVE = ProjectState.Active;
 	ProjectState private constant FINISHED = ProjectState.Finished;
 	ProjectState private constant DELETED = ProjectState.Deleted;
 	bytes32 private constant ADMIN_ROLE = 0x00;
 
-	/// @notice Interfaces
+	/// Interfaces
 	IRacksProjectManager private immutable racksPM;
 
-	/// @notice projectContributors
+	/// Contributors List
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private contributorList;
 
@@ -38,7 +49,7 @@ contract Project is Ownable, AccessControl {
 	mapping(address => uint256) private participationOfContributors;
 	mapping(address => uint256) private projectFunds;
 
-	/// @notice State variables
+	/// State variables
 	string private name;
 	uint256 private colateralCost;
 	uint256 private reputationLevel;
@@ -64,46 +75,45 @@ contract Project is Ownable, AccessControl {
 		_;
 	}
 
-	/// @notice Check that user is Admin
+	/**
+	 * @notice Check that sender is Admin
+	 */ 
 	modifier onlyAdmin() {
 		if (!hasRole(ADMIN_ROLE, msg.sender)) revert adminErr();
 		_;
 	}
 
-	/// @notice Check that user is Contributor
+	/**
+	 * @notice Check that sender is Contributor
+	 */
 	modifier onlyContributor() {
 		if (!racksPM.isWalletContributor(msg.sender)) revert contributorErr();
 		_;
 	}
 
-	/// @notice Check that the smart contract is not Paused
+	/**
+	 * @notice Check that the smart contract is not Paused
+	 */ 
 	modifier isNotPaused() {
 		if (racksPM.isPaused()) revert pausedErr();
 		_;
 	}
 
-	/// @notice Check that the smart contract is not Pending
+	/** 
+	 * @notice Check that the smart contract is not Pending
+	 */ 
 	modifier isNotPending() {
 		if (projectState == PENDING) revert pendingErr();
 		_;
 	}
 
-	/// @notice Check that the smart contract is not Deleted
+	/**
+	 * @notice Check that the smart contract is not Deleted
+	 */ 
 	modifier isNotDeleted() {
 		if (projectState == DELETED) revert deletedErr();
 		_;
 	}
-
-	/// Events
-	event NewProjectContributorsRegistered(
-		address projectAddress,
-		address newProjectContributor
-	);
-	event ProjectFunded(
-		address projectAddress,
-		address funderWallet,
-		uint256 amount
-	);
 
 	/**
 	 * @notice Constructor
@@ -467,22 +477,30 @@ contract Project is Ownable, AccessControl {
 		return colateralCost;
 	}
 
-	/// @notice Get the reputation level of the project
+	/**
+	 * @notice Get the reputation level of the project
+	 */ 
 	function getReputationLevel() external view returns (uint256) {
 		return reputationLevel;
 	}
 
-	/// @notice Get the maximum contributor that can be in the project
+	/** 
+	 * @notice Get the maximum contributor that can be in the project
+	 */
 	function getMaxContributors() external view returns (uint256) {
 		return maxContributorsNumber;
 	}
 
-	/// @notice Get total number of contributors
+	/**
+	 * @notice Get total number of contributors
+	 */ 
 	function getNumberOfContributors() external view returns (uint256) {
 		return contributorList.sizeOf();
 	}
 
-	/// @notice Get all contributor addresses
+	/**
+	 * @notice Get all contributor addresses
+	 */
 	function getAllContributorsAddress()
 		external
 		view
@@ -504,7 +522,9 @@ contract Project is Ownable, AccessControl {
 		return allContributors;
 	}
 
-	/// @notice Get contributor by address
+	/**
+	 * @notice Get contributor by address
+	 */ 
 	function getContributorByAddress(
 		address _account
 	) external view onlyAdmin returns (Contributor memory) {
@@ -512,14 +532,18 @@ contract Project is Ownable, AccessControl {
 		return projectContributors[id];
 	}
 
-	/// @notice Return true if the address is a contributor in the project
+	/**
+	 * @notice Return true if the address is a contributor in the project
+	 */
 	function isContributorInProject(
 		address _contributor
 	) public view returns (bool) {
 		return contributorId[_contributor] != 0;
 	}
 
-	/// @notice Get the participation weight in percent
+	/**
+	 * @notice Get the participation weight in percent
+	 */ 
 	function getContributorParticipation(
 		address _contributor
 	) external view returns (uint256) {
@@ -527,32 +551,44 @@ contract Project is Ownable, AccessControl {
 		return participationOfContributors[_contributor];
 	}
 
-	/// @notice Get the balance of funds given by an address
+	/**
+	 *  @notice Get the balance of funds given by an address
+	 */ 
 	function getAccountFunds(address _account) external view returns (uint256) {
 		return projectFunds[_account];
 	}
 
-	/// @notice Get total amount of funds a Project got since creation
+	/**
+	 * @notice Get total amount of funds a Project got since creation
+	 */ 
 	function getTotalAmountFunded() external view returns (uint256) {
 		return totalAmountFunded;
 	}
 
-	/// @notice Returns whether the project is pending or not
+	/**
+	 * @notice Returns whether the project is pending or not
+	 */ 
 	function isPending() external view returns (bool) {
 		return projectState == PENDING;
 	}
 
-	/// @notice Returns whether the project is active or not
+	/**
+	 * @notice Returns whether the project is active or not
+	 */
 	function isActive() external view returns (bool) {
 		return projectState == ACTIVE;
 	}
 
-	/// @notice Return true is the project is completed, otherwise return false
+	/**
+	 *  @notice Return true is the project is completed, otherwise return false
+	 */ 
 	function isFinished() external view returns (bool) {
 		return projectState == FINISHED;
 	}
 
-	/// @notice Returns whether the project is deleted or not
+	/**
+	 *  @notice Returns whether the project is deleted or not
+	 */ 
 	function isDeleted() external view returns (bool) {
 		return projectState == DELETED;
 	}

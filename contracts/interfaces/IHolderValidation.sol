@@ -18,7 +18,8 @@ interface IHolderValidation {
 	/////////////////////////////
 
 	/**
-	 * @notice Returns true if @param _account is admin in RacksProjectsManager otherwise returns false
+	 * @notice Returns true if @param _account is have at least one NFT of the collections
+	 * authorized otherwise returns false
 	 */
 	function isHolder(address _account) external view returns (address);
 }

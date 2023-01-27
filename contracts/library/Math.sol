@@ -5,7 +5,7 @@ pragma solidity ^0.8.7;
 library MathLib {
 	function sqrt(uint256 x) internal pure returns (uint256 z) {
 		/// @solidity memory-safe-assembly
-        // solhint-disable-next-line no-inline-assembly
+		// solhint-disable-next-line no-inline-assembly
 		assembly {
 			let y := x // We start y at x, which will help us make our initial estimate.
 
