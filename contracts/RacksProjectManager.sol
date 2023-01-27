@@ -64,7 +64,7 @@ contract RacksProjectManager is
 	 * @dev Only callable by Admins
 	 */
 	modifier onlyAdmin() {
-		if (!hasRole(ADMIN_ROLE, msg.sender)) revert adminErr();
+		if (!hasRole(ADMIN_ROLE, msg.sender)) revert RacksProjectManager_NotAdminErr();
 		_;
 	}
 
@@ -75,7 +75,7 @@ contract RacksProjectManager is
 		if (
 			!isHolder(msg.sender) &&
 			!hasRole(ADMIN_ROLE, msg.sender)
-		) revert holderErr();
+		) revert RacksProjectManager_NotHolderErr();
 		_;
 	}
 
@@ -83,7 +83,7 @@ contract RacksProjectManager is
 	 * @dev Only callable when contract is not paused
 	 */
 	modifier isNotPaused() {
-		if (paused) revert pausedErr();
+		if (paused) revert RacksProjectManager_IsPausedErr();
 		_;
 	}
 
@@ -131,7 +131,7 @@ contract RacksProjectManager is
 			_reputationLevel <= 0 ||
 			_maxContributorsNumber <= 0 ||
 			bytes(_name).length <= 0
-		) revert projectInvalidParameterErr();
+		) revert RacksProjectManager_InvalidParameterErr();
 
 		Project newProject = new Project(
 			this,
@@ -156,7 +156,7 @@ contract RacksProjectManager is
 	 */
 	function registerContributor() external onlyHolder isNotPaused {
 		if (isWalletContributor(msg.sender))
-			revert contributorAlreadyExistsErr();
+			revert RacksProjectManager_ContributorAlreadyExistsErr();
 
 		contributors.push(msg.sender);
 		contributorsData[msg.sender] = Contributor(msg.sender, 0, false);
@@ -237,7 +237,7 @@ contract RacksProjectManager is
 		uint256 _grossReputationPoints,
 		bool _add
 	) public override onlyAdmin {
-		if (_grossReputationPoints <= 0) revert invalidParameterErr();
+		if (_grossReputationPoints <= 0) revert RacksProjectManager_InvalidParameterErr();
 
 		Contributor memory contributor = contributorsData[_account];
 
@@ -436,7 +436,7 @@ contract RacksProjectManager is
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
-		if (id == 0) revert invalidParameterErr();
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
 
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);
