@@ -170,7 +170,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.connect(user1).registerProjectContributor()
-					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 				});
 
 				it("Should revert if the project is deleted", async () => {
@@ -531,7 +531,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.finishProject(500, [user2.address, user1.address], [70, 30])
-					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 
 					await racksPM.setIsPaused(false);
 
@@ -547,18 +547,18 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await await racksPM.setIsPaused(true);
 					await expect(
 						projectContract.setColateralCost(ethers.utils.parseEther("100"))
-					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 
 					await expect(
 						projectContract.setName("Project Updated")
-					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 
 					await expect(
 						projectContract.setReputationLevel(3)
-					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 					await expect(
 						projectContract.setMaxContributorsNumber(3)
-					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 				});
 
 				it("Should revert with Project_IsDeletedErr", async () => {
@@ -674,7 +674,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				it("Should revert with Project_IsPausedErr", async () => {
 					racksPM.setIsPaused(true);
 					await expect(projectContract.giveAway()).to.be.revertedWithCustomError(
-						racksPM,
+						projectContract,
 						"Project_IsPausedErr"
 					);
 				});
