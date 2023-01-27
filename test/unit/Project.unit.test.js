@@ -36,19 +36,22 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			});
 
 			describe("Register Project Contributor", () => {
-				it("Should revert with contributorErr", async () => {
+				it("Should revert with Project_IsNotContributor", async () => {
 					await expect(
 						projectContract.connect(user1).registerProjectContributor()
-					).to.be.revertedWithCustomError(projectContract, "contributorErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsNotContributor");
 				});
 
-				it("Should revert with contributorErr because can not remove a contributor that is not in the project", async () => {
+				it("Should revert with Project_ContributorNotInProject because can not remove a contributor that is not in the project", async () => {
 					await expect(
 						projectContract.removeContributor(user1.address, true)
-					).to.be.revertedWithCustomError(projectContract, "contributorErr");
+					).to.be.revertedWithCustomError(
+						projectContract,
+						"Project_ContributorNotInProject"
+					);
 				});
 
-				it("Should revert with projectContributorAlreadyExistsErr and maxContributorsNumberExceededErr", async () => {
+				it("Should revert with Project_ContributorAlreadyExistsErr and Project_MaxContributorNumberExceededErr", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
 					await erc20
@@ -60,7 +63,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						projectContract.connect(user1).registerProjectContributor()
 					).to.be.revertedWithCustomError(
 						projectContract,
-						"projectContributorAlreadyExistsErr"
+						"Project_ContributorAlreadyExistsErr"
 					);
 
 					const previosBalance = await erc20.balanceOf(user2.address);
@@ -84,7 +87,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						projectContract.connect(user3).registerProjectContributor()
 					).to.be.revertedWithCustomError(
 						projectContract,
-						"maxContributorsNumberExceededErr"
+						"Project_MaxContributorNumberExceededErr"
 					);
 
 					// if remove one contributor you can add another one
@@ -100,7 +103,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					assert.equal(await projectContract.getNumberOfContributors(), 2);
 				});
 
-				it("Should revert if Contributor is banned with projectContributorIsBannedErr", async () => {
+				it("Should revert if Contributor is banned with Project_ContributorIsBannedErr", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
 					await erc20
@@ -113,11 +116,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						projectContract.connect(user1).registerProjectContributor()
 					).to.be.revertedWithCustomError(
 						projectContract,
-						"projectContributorIsBannedErr"
+						"Project_ContributorIsBannedErr"
 					);
 				});
 
-				it("Should revert if Contributor has no Reputation Level Enough with projectContributorHasNoReputationEnoughErr", async () => {
+				it("Should revert if Contributor has no Reputation Level Enough with Project_ContributorHasNoReputationEnoughErr", async () => {
 					await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 3);
 					const projects = await racksPM.getProjects();
 					const projectAddress2 = projects[0];
@@ -136,7 +139,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						project2Contract.connect(user1).registerProjectContributor()
 					).to.be.revertedWithCustomError(
 						project2Contract,
-						"projectContributorHasNoReputationEnoughErr"
+						"Project_ContributorHasNoReputationEnoughErr"
 					);
 				});
 
@@ -167,7 +170,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.connect(user1).registerProjectContributor()
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
 				});
 
 				it("Should revert if the project is deleted", async () => {
@@ -181,7 +184,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.connect(user1).registerProjectContributor()
-					).to.be.revertedWithCustomError(projectContract, "deletedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 				});
 			});
 
@@ -239,13 +242,13 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			});
 
 			describe("Finish Project", () => {
-				it("Should revert with adminErr", async () => {
+				it("Should revert with Project_NotAdminErr", async () => {
 					await expect(
 						projectContract.connect(user1).finishProject(500, [user2.address], [20])
-					).to.be.revertedWithCustomError(projectContract, "adminErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 				});
 
-				it("Should revert with contributorErr", async () => {
+				it("Should revert with Project_ContributorNotInProject", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
 					await erc20
@@ -255,10 +258,13 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.finishProject(500, [user2.address], [20])
-					).to.be.revertedWithCustomError(projectContract, "contributorErr");
+					).to.be.revertedWithCustomError(
+						projectContract,
+						"Project_ContributorNotInProject"
+					);
 				});
 
-				it("Should revert with projectInvalidParameterErr", async () => {
+				it("Should revert with Project_InvalidParameterErr", async () => {
 					await mrc.connect(user2).mint(1);
 					await racksPM.connect(user2).registerContributor();
 					await erc20
@@ -268,18 +274,18 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.finishProject(500, [user2.address], [])
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 
 					await expect(
 						projectContract.finishProject(500, [], [20])
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 
 					await expect(
 						projectContract.finishProject(0, [user2.address], [20])
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
-				it("Should revert because of less contributors array length than project contributors registered with projectInvalidParameterErr", async () => {
+				it("Should revert because of less contributors array length than project contributors registered with Project_InvalidParameterErr", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
 					await erc20
@@ -300,7 +306,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 							[user2.address],
 							[ethers.utils.parseEther("100")]
 						)
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
 				it("Should revert becase de total of participation weight is greeter than 100 ", async () => {
@@ -332,10 +338,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.finishProject(500, [user2.address, user1.address], [70, 70])
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
-				it("Should revert with projectFinishedErr", async () => {
+				it("Should revert with Project_FinishedErr", async () => {
 					await mrc.connect(user2).mint(1);
 					await racksPM.connect(user2).registerContributor();
 					await erc20
@@ -346,7 +352,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.finishProject(500, [user2.address], [100])
-					).to.be.revertedWithCustomError(projectContract, "projectFinishedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_FinishedErr");
 				});
 
 				it("Should set the Project as finished, refund colateral and grant rewards", async () => {
@@ -525,83 +531,83 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.finishProject(500, [user2.address, user1.address], [70, 30])
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
 
 					await racksPM.setIsPaused(false);
 
 					await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
 						projectContract,
-						"projectNoEditableErr"
+						"Project_IsNotEditableErr"
 					);
 				});
 			});
 
 			describe("Edit Project", () => {
-				it("Should revert with pausedErr", async () => {
+				it("Should revert with Project_IsPausedErr", async () => {
 					await await racksPM.setIsPaused(true);
 					await expect(
 						projectContract.setColateralCost(ethers.utils.parseEther("100"))
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
 
 					await expect(
 						projectContract.setName("Project Updated")
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
 
 					await expect(
 						projectContract.setReputationLevel(3)
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
 					await expect(
 						projectContract.setMaxContributorsNumber(3)
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "Project_IsPausedErr");
 				});
 
-				it("Should revert with deletedErr", async () => {
+				it("Should revert with Project_IsDeletedErr", async () => {
 					await await projectContract.deleteProject();
 					await expect(
 						projectContract.setColateralCost(ethers.utils.parseEther("100"))
-					).to.be.revertedWithCustomError(projectContract, "deletedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 
 					await expect(
 						projectContract.setName("Project Updated")
-					).to.be.revertedWithCustomError(projectContract, "deletedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 
 					await expect(
 						projectContract.setReputationLevel(3)
-					).to.be.revertedWithCustomError(projectContract, "deletedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 					await expect(
 						projectContract.setMaxContributorsNumber(3)
-					).to.be.revertedWithCustomError(projectContract, "deletedErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 				});
-				it("Should revert with adminErr", async () => {
+				it("Should revert with Project_NotAdminErr", async () => {
 					// Test not working because of Hardhat bug
 					// await expect(
 					//     projectContract.connect(user1).setColateralCost(100)
-					// ).to.be.revertedWithCustomError(projectContract, "adminErr");
+					// ).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
 						projectContract.connect(user1).setName("Project Updated")
-					).to.be.revertedWithCustomError(projectContract, "adminErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
 						projectContract.connect(user1).setReputationLevel(3)
-					).to.be.revertedWithCustomError(projectContract, "adminErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
 						projectContract.connect(user1).setMaxContributorsNumber(3)
-					).to.be.revertedWithCustomError(projectContract, "adminErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 				});
 
-				it("Should revert with projectInvalidParameterErr", async () => {
+				it("Should revert with Project_InvalidParameterErr", async () => {
 					await expect(projectContract.setName("")).to.be.revertedWithCustomError(
 						projectContract,
-						"projectInvalidParameterErr"
+						"Project_InvalidParameterErr"
 					);
 					await expect(
 						projectContract.setReputationLevel(0)
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 					await expect(
 						projectContract.setMaxContributorsNumber(0)
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
-				it("Should revert with projectNoEditableErr", async () => {
+				it("Should revert with Project_IsNotEditableErr", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
 					await erc20
@@ -611,20 +617,20 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.setName("Project Updated")
-					).to.be.revertedWithCustomError(projectContract, "projectNoEditableErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
 					await expect(
 						projectContract.setColateralCost(200)
-					).to.be.revertedWithCustomError(projectContract, "projectNoEditableErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
 					await expect(
 						projectContract.setReputationLevel(3)
-					).to.be.revertedWithCustomError(projectContract, "projectNoEditableErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
 					await expect(
 						projectContract.setMaxContributorsNumber(0)
-					).to.be.revertedWithCustomError(projectContract, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 
 					await expect(projectContract.deleteProject()).to.be.revertedWithCustomError(
 						projectContract,
-						"projectNoEditableErr"
+						"Project_IsNotEditableErr"
 					);
 				});
 
@@ -644,7 +650,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						projectContract.connect(user1).registerProjectContributor()
 					).to.be.revertedWithCustomError(
 						projectContract,
-						"projectContributorHasNoReputationEnoughErr"
+						"Project_ContributorHasNoReputationEnoughErr"
 					);
 
 					const name = await projectContract.getName();
@@ -659,24 +665,24 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			});
 
 			describe("Give away extra rewards after Project is finished", () => {
-				it("Should revert with adminErr", async () => {
+				it("Should revert with Project_NotAdminErr", async () => {
 					await expect(
 						projectContract.connect(user1).giveAway()
-					).to.be.revertedWithCustomError(projectContract, "adminErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 				});
 
-				it("Should revert with pausedErr", async () => {
+				it("Should revert with Project_IsPausedErr", async () => {
 					racksPM.setIsPaused(true);
 					await expect(projectContract.giveAway()).to.be.revertedWithCustomError(
 						racksPM,
-						"pausedErr"
+						"Project_IsPausedErr"
 					);
 				});
 
-				it("Should revert with notCompletedErr", async () => {
+				it("Should revert with Project_NotCompletedErr", async () => {
 					await expect(projectContract.giveAway()).to.be.revertedWithCustomError(
 						projectContract,
-						"notCompletedErr"
+						"Project_NotCompletedErr"
 					);
 				});
 
@@ -703,11 +709,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 			});
 			describe("Fund Project", () => {
-				it("Should revert with invalidParameterErr on project with no contributors", async () => {
+				it("Should revert with Project_InvalidParameterErr on project with no contributors", async () => {
 					await erc20.connect(user2).approve(projectContract.address, 500);
 					await expect(
 						projectContract.connect(user2).fundProject(500)
-					).to.be.revertedWithCustomError(projectContract, "invalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
@@ -718,7 +724,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await expect(
 						projectContract.connect(user2).fundProject(0)
-					).to.be.revertedWithCustomError(projectContract, "invalidParameterErr");
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
 				it("Should revert with ERC20: insufficient allowance", async () => {

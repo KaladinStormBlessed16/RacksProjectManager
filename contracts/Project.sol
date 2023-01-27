@@ -388,7 +388,7 @@ contract Project is Ownable, AccessControl {
 		address _contributor,
 		bool _returnColateral
 	) public onlyAdmin isNotDeleted {
-		if (!isContributorInProject(_contributor)) revert Project_ContributorAlreadyExistsErr();
+		if (!isContributorInProject(_contributor)) revert Project_ContributorNotInProject();
 
 		uint256 id = contributorId[_contributor];
 		contributorId[_contributor] = 0;

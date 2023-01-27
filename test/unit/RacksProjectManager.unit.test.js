@@ -58,26 +58,26 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			});
 
 			describe("Create Project", () => {
-				it("Should revert with adminErr", async () => {
+				it("Should revert with RacksProjectManager_NotAdminErr", async () => {
 					await expect(
 						racksPM
 							.connect(user1)
 							.createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
-					).to.be.revertedWithCustomError(racksPM, "adminErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotAdminErr");
 				});
 
-				it("Should revert with projectInvalidParameterErr", async () => {
+				it("Should revert with RacksProjectManager_InvalidParameterErr", async () => {
 					await expect(
 						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 0, 2)
-					).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_InvalidParameterErr");
 
 					await expect(
 						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 1, 0)
-					).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_InvalidParameterErr");
 
 					await expect(
 						racksPM.createProject("", ethers.utils.parseEther("100"), 1, 3)
-					).to.be.revertedWithCustomError(racksPM, "projectInvalidParameterErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_InvalidParameterErr");
 				});
 
 				it("Should create project and then deleted correctly", async () => {
@@ -103,7 +103,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						racksPM
 							.connect(user1)
 							.createProject("Project3", ethers.utils.parseEther("100"), 1, 2)
-					).to.be.revertedWithCustomError(racksPM, "adminErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotAdminErr");
 
 					let projects = await racksPM.getProjects();
 					expect(projects).to.have.same.members([project1.address, project2.address]);
@@ -168,23 +168,23 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						racksPM
 							.connect(user1)
 							.createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_IsPausedErr");
 				});
 			});
 
 			describe("Register Contributor", () => {
-				it("Should revert with holderErr", async () => {
+				it("Should revert with RacksProjectManager_NotHolderErr", async () => {
 					await expect(
 						racksPM.connect(user1).registerContributor()
-					).to.be.revertedWithCustomError(racksPM, "holderErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotHolderErr");
 				});
 
-				it("Should revert with contributorAlreadyExistsErr", async () => {
+				it("Should revert with RacksProjectManager_ContributorAlreadyExistsErr", async () => {
 					await mrc.connect(user1).mint(1);
 					await racksPM.connect(user1).registerContributor();
 					await expect(
 						racksPM.connect(user1).registerContributor()
-					).to.be.revertedWithCustomError(racksPM, "contributorAlreadyExistsErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_ContributorAlreadyExistsErr");
 				});
 
 				it("Should register Contributor", async () => {
@@ -203,7 +203,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await mrc.connect(user1).mint(1);
 					await expect(
 						racksPM.connect(user1).registerContributor()
-					).to.be.revertedWithCustomError(racksPM, "pausedErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_IsPausedErr");
 				});
 			});
 
@@ -211,7 +211,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				it("Should revert if it is not Holder and it is not Admin", async () => {
 					await expect(
 						racksPM.connect(user1).getProjects()
-					).to.be.revertedWithCustomError(racksPM, "holderErr");
+					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotHolderErr");
 				});
 
 				it("Should retieve only Lv1 Projects called by a Holder", async () => {
