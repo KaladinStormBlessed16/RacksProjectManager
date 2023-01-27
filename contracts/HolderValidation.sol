@@ -66,7 +66,7 @@ contract HolderValidation is IHolderValidation, Ownable {
 	function deleteCollection(address _deleteCollection) external onlyOwner {
 		uint256 id = collectionId[_deleteCollection];
 
-		if (id == 0) revert invalidParameterErr();
+		if (id == 0) revert HolderValidation_InvalidCollection();
 
 		collectionId[msg.sender] = 0;
 		collectionsList.remove(id);
