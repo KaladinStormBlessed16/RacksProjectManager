@@ -121,16 +121,17 @@ contract RacksProjectManager is
 	 * @dev Only callable by Admins
 	 */
 	function createProject(
-		string memory _name,
+		string calldata _name,
 		uint256 _colateralCost,
 		uint256 _reputationLevel,
 		uint256 _maxContributorsNumber
-	) external onlyAdmin isNotPaused {
+	) external isNotPaused {
 		if (
 			_colateralCost < 0 ||
 			_reputationLevel <= 0 ||
 			_maxContributorsNumber <= 0 ||
-			bytes(_name).length <= 0
+			bytes(_name).length <= 0 ||
+			bytes(_name).length > 30
 		) revert RacksProjectManager_InvalidParameterErr();
 
 		Project newProject = new Project(
@@ -141,7 +142,9 @@ contract RacksProjectManager is
 			_maxContributorsNumber
 		);
 
-		progressiveId++;
+		unchecked{
+			++progressiveId;
+		}
 		projectStore[progressiveId] = newProject;
 		projectId[address(newProject)] = progressiveId;
 		projectsList.pushFront(progressiveId);
@@ -347,7 +350,7 @@ contract RacksProjectManager is
 					projectStore[i].getReputationLevel() <= callerReputationLv
 				) {
 					filteredProjects[j] = projectStore[i];
-					j++;
+					++j;
 				}
 				(existNext, i) = projectsList.getNextNode(i);
 			}
@@ -372,10 +375,12 @@ contract RacksProjectManager is
 		uint256 j = 0;
 		(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
-		while (i != 0 && existNext) {
-			allProjects[j] = projectStore[i];
-			j++;
-			(existNext, i) = projectsList.getNextNode(i);
+		unchecked{
+			while (i != 0 && existNext) {
+				allProjects[j] = projectStore[i];
+				++j;
+				(existNext, i) = projectsList.getNextNode(i);
+			}
 		}
 
 		return allProjects;

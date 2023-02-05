@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IRacksProjectManager.sol";
@@ -9,7 +8,7 @@ import "./Contributor.sol";
 import "./Err.sol";
 import "./library/StructuredLinkedList.sol";
 
-contract Project is Ownable, AccessControl {
+contract Project is AccessControl {
 	/// Events
 	event NewProjectContributorsRegistered(
 		address projectAddress,
@@ -130,6 +129,8 @@ contract Project is Ownable, AccessControl {
 		uint256 _reputationLevel,
 		uint256 _maxContributorsNumber
 	) {
+		if(bytes(_name).length > 30) revert RacksProjectManager_InvalidParameterErr();
+
 		racksPM = _racksPM;
 		name = _name;
 		colateralCost = _colateralCost;

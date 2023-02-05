@@ -58,33 +58,42 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			});
 
 			describe("Create Project", () => {
-				it("Should revert with RacksProjectManager_NotAdminErr", async () => {
-					await expect(
-						racksPM
-							.connect(user1)
-							.createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotAdminErr");
-				});
-
 				it("Should revert with RacksProjectManager_InvalidParameterErr", async () => {
 					await expect(
 						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 0, 2)
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_InvalidParameterErr");
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
 
 					await expect(
 						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 1, 0)
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_InvalidParameterErr");
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
 
 					await expect(
 						racksPM.createProject("", ethers.utils.parseEther("100"), 1, 3)
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_InvalidParameterErr");
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
+
+					await expect(
+						racksPM.createProject(
+							"Project to looooooooooooooooong",
+							ethers.utils.parseEther("100"),
+							1,
+							3
+						)
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
 				});
 
 				it("Should create project and then deleted correctly", async () => {
-					await racksPM.addAdmin(user1.address);
-					expect(await racksPM.isAdmin(user1.address)).to.be.true;
-					expect(await racksPM.isAdmin(user2.address)).to.be.false;
-
 					const tx = await racksPM
 						.connect(user1)
 						.createProject("Project2", ethers.utils.parseEther("100"), 1, 2);
@@ -97,13 +106,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await project2.approveProject();
 
 					assert.lengthOf(await racksPM.getProjects(), 2);
-
-					await racksPM.removeAdmin(user1.address);
-					await expect(
-						racksPM
-							.connect(user1)
-							.createProject("Project3", ethers.utils.parseEther("100"), 1, 2)
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotAdminErr");
 
 					let projects = await racksPM.getProjects();
 					expect(projects).to.have.same.members([project1.address, project2.address]);
@@ -184,7 +186,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await racksPM.connect(user1).registerContributor();
 					await expect(
 						racksPM.connect(user1).registerContributor()
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_ContributorAlreadyExistsErr");
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_ContributorAlreadyExistsErr"
+					);
 				});
 
 				it("Should register Contributor", async () => {
