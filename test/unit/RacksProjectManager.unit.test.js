@@ -157,7 +157,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						"RacksProjectManager_InvalidParameterErr"
 					);
 
-					await project2.deleteProject();
+					expect(await project2.deleteProject())
+						.to.emit(racksPM, "ProjectDeleted")
+						.withArgs("Project2", project2.address);
 
 					expect(await project2.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("0")

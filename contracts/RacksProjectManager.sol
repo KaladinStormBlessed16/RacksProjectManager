@@ -441,15 +441,20 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
+	 * @dev Function called from the Project contract whe is deleted
 	 */ 
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
 		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
 
-		projectNameExists[projectStore[id].getName()] = false;
+		string memory projectName = projectStore[id].getName();
+
+		projectNameExists[projectName] = false;
 
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);
+
+		emit ProjectDeleted(projectName, msg.sender);
 	}
 }

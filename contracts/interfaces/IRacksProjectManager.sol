@@ -20,6 +20,11 @@ interface IRacksProjectManager {
 	 * @notice Event emitted when a new project is created in RacksProjectsManager
 	 */
 	event NewProjectCreated(string name, address newProjectAddress);
+	
+	/**
+	 * @notice Event emitted when a project is deleted in RacksProjectsManager
+	 */
+	event ProjectDeleted(string name, address deletedProjectAddress);
 
 	/////////////////////////////
 	///   Abstract functions  ///
