@@ -132,7 +132,8 @@ contract RacksProjectManager is
 			_reputationLevel <= 0 ||
 			_maxContributorsNumber <= 0 ||
 			bytes(_name).length <= 0 ||
-			bytes(_name).length > 30
+			bytes(_name).length > 30 || 
+			projectNameExists[_name]
 		) revert RacksProjectManager_InvalidParameterErr();
 
 		Project newProject = new Project(

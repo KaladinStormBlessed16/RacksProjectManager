@@ -149,6 +149,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await fundTx.wait();
 
+					// We should not be able to create a project with the same name
+					await expect(
+						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
+
 					await project2.deleteProject();
 
 					expect(await project2.getAccountFunds(user2.address)).to.be.equal(
@@ -166,7 +174,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					projects = await racksPM.getProjects();
 					expect(projects).to.have.same.members([project1.address]);
 
-					await racksPM.createProject("Project3", ethers.utils.parseEther("0"), 1, 2);
+					// We should be able to create a new project with the same name
+					await racksPM.createProject("Project2", ethers.utils.parseEther("0"), 1, 2);
 				});
 
 				it("Should revert if the smart contract is paused", async () => {
