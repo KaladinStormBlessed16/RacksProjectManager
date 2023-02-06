@@ -552,10 +552,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 
 					await expect(
-						projectContract.setName("Project Updated")
-					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
-
-					await expect(
 						projectContract.setReputationLevel(3)
 					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 					await expect(
@@ -567,10 +563,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await await projectContract.deleteProject();
 					await expect(
 						projectContract.setColateralCost(ethers.utils.parseEther("100"))
-					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
-
-					await expect(
-						projectContract.setName("Project Updated")
 					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 
 					await expect(
@@ -588,9 +580,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 							.setColateralCost(ethers.utils.parseEther("100"))
 					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
-						projectContract.connect(user1).setName("Project Updated")
-					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
-					await expect(
 						projectContract.connect(user1).setReputationLevel(3)
 					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
@@ -599,10 +588,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 
 				it("Should revert with Project_InvalidParameterErr", async () => {
-					await expect(projectContract.setName("")).to.be.revertedWithCustomError(
-						projectContract,
-						"Project_InvalidParameterErr"
-					);
 					await expect(
 						projectContract.setReputationLevel(0)
 					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
@@ -620,9 +605,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await projectContract.connect(user1).registerProjectContributor();
 
 					await expect(
-						projectContract.setName("Project Updated")
-					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
-					await expect(
 						projectContract.setColateralCost(200)
 					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
 					await expect(
@@ -639,7 +621,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 
 				it("Should edit Project with new Colateral Cost, Reputation Level and Max Contributors Number", async () => {
-					projectContract.setName("Project Updated");
 					projectContract.setReputationLevel(3);
 					projectContract.setColateralCost(500);
 					projectContract.setMaxContributorsNumber(5);
@@ -657,8 +638,6 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						"Project_ContributorHasNoReputationEnoughErr"
 					);
 
-					const name = await projectContract.getName();
-					expect(name).to.be.equal("Project Updated");
 					const reputationLv = await projectContract.getReputationLevel();
 					expect(reputationLv.toNumber()).to.be.equal(3);
 					const colateralCost = await projectContract.getColateralCost();

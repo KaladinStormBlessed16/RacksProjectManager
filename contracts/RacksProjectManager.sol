@@ -467,4 +467,15 @@ contract RacksProjectManager is
 
 		emit ProjectFinished(msg.sender);
 	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
+	function approveProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		emit ProjectApproved(msg.sender);
+	}
 }

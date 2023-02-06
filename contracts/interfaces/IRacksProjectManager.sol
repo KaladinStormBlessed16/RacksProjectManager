@@ -31,6 +31,13 @@ interface IRacksProjectManager {
 	 */
 	event ProjectFinished(address indexed finishedProjectAddress);
 
+
+	/**
+	 * @notice 
+	 */
+	event ProjectApproved(address indexed provedProjectAddress);
+
+
 	/////////////////////////////
 	///   Abstract functions  ///
 	/////////////////////////////
@@ -81,16 +88,22 @@ interface IRacksProjectManager {
 	function isPaused() external view returns (bool);
 
 	/**
-	 * @notice Deletes the project associated with the address of msg.sender Delete the project
+	 * @notice Deletes the project associated with the address of msg.sender
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function deleteProject() external;
 
 	/**
-	 * @notice Finish the project associated with the address of msg.sender Delete the project
+	 * @notice Finish the project associated with the address of msg.sender 
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function finishProject() external;
+
+	/**
+	 * @notice Approve the project associated with the address of msg.sender 
+	 * @dev This function is called from Projects contracts when is deleted
+	 */
+	function approveProject() external;
 
 	function calculateLevel(uint256 totalPoints) external returns (uint256);
 

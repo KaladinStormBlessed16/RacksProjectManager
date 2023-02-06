@@ -11,11 +11,9 @@ import "./library/StructuredLinkedList.sol";
 contract Project is AccessControl {
 	/// Events
 	event NewProjectContributorsRegistered(
-		address projectAddress,
 		address newProjectContributor
 	);
 	event ProjectFunded(
-		address projectAddress,
 		address funderWallet,
 		uint256 amount
 	);
@@ -178,7 +176,7 @@ contract Project is AccessControl {
 		contributorList.pushFront(progressiveId);
 		contributorId[contributor.wallet] = progressiveId;
 
-		emit NewProjectContributorsRegistered(address(this), msg.sender);
+		emit NewProjectContributorsRegistered(msg.sender);
 		if (colateralCost > 0) {
 			bool success = erc20racksPM.transferFrom(
 				msg.sender,
@@ -212,7 +210,7 @@ contract Project is AccessControl {
 
 		projectState = FINISHED;
 
-		racksPM.finishProject();
+		racksPM.approveProject();
 
 		uint256 totalParticipationWeight = 0;
 		unchecked {
@@ -271,9 +269,14 @@ contract Project is AccessControl {
 			revert Project_InvalidParameterErr();
 
 		totalAmountFunded += _amount;
+
+		if (projectFunds[msg.sender] == 0){
+			funders.push(msg.sender);
+		}
+
 		projectFunds[msg.sender] += _amount;
-		funders.push(msg.sender);
-		emit ProjectFunded(address(this), msg.sender, _amount);
+
+		emit ProjectFunded(msg.sender, _amount);
 		bool success = erc20racksPM.transferFrom(
 			msg.sender,
 			address(this),
@@ -369,15 +372,14 @@ contract Project is AccessControl {
 					address funder = funders[i];
 					uint256 amount = projectFunds[funder];
 
-					if (amount > 0) {
-						projectFunds[funder] = 0;
-						totalAmountFunded -= amount;
-						bool successTransfer = erc20racksPM.transfer(
-							funder,
-							amount
-						);
-						if (!successTransfer) revert Project_Erc20TransferFailed();
-					}
+					projectFunds[funder] = 0;
+					totalAmountFunded -= amount;
+					bool successTransfer = erc20racksPM.transfer(
+						funder,
+						amount
+					);
+
+					if (!successTransfer) revert Project_Erc20TransferFailed();
 				}
 			}
 		}
@@ -413,18 +415,10 @@ contract Project is AccessControl {
 	 * @dev Only callable by Admins when the project has no Contributor yet and is pending.
 	 */
 	function approveProject() external onlyAdmin isNotPaused isNotDeleted {
-		if (projectState == PENDING) projectState = ACTIVE;
-	}
-
-	/**
-	 * @notice  the Project Name
-	 * @dev Only callable by Admins when the project has no Contributor yet.
-	 */
-	function setName(
-		string memory _name
-	) external onlyAdmin isEditable isNotPaused isNotDeleted {
-		if (bytes(_name).length <= 0) revert Project_InvalidParameterErr();
-		name = _name;
+		if (projectState == PENDING){ 
+			projectState = ACTIVE;
+			racksPM.approveProject();
+		}
 	}
 
 	/**
@@ -457,7 +451,7 @@ contract Project is AccessControl {
 		uint256 _maxContributorsNumber
 	) external onlyAdmin isNotPaused isNotDeleted {
 		if (
-			_maxContributorsNumber <= 0 ||
+			_maxContributorsNumber == 0 ||
 			_maxContributorsNumber < contributorList.sizeOf()
 		) revert Project_InvalidParameterErr();
 		maxContributorsNumber = _maxContributorsNumber;
