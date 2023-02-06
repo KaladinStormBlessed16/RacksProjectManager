@@ -41,6 +41,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				project1 = await ethers.getContractAt("Project", newProjectAddress);
 				project1 = project1.connect(deployer);
 				await project1.approveProject();
+
+				const filter = racksPM.filters.NewProjectCreated(
+					ethers.utils.formatBytes32String("Project1")
+				);
+
+				const events = await racksPM.queryFilter(filter);
+
+				expect(events.length).to.be.equal(1);
 			});
 
 			describe("Setup", () => {
@@ -157,9 +165,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						"RacksProjectManager_InvalidParameterErr"
 					);
 
-					expect(await project2.deleteProject())
-						.to.emit(racksPM, "ProjectDeleted")
-						.withArgs("Project2", project2.address);
+					expect(await project2.deleteProject()).to.emit(racksPM, "ProjectDeleted");
 
 					expect(await project2.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("0")
@@ -178,6 +184,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					// We should be able to create a new project with the same name
 					await racksPM.createProject("Project2", ethers.utils.parseEther("0"), 1, 2);
+
+					const filterProjectCreated = racksPM.filters.NewProjectCreated(
+						ethers.utils.formatBytes32String("Project2")
+					);
+
+					const newProjectCreatedEvents = await racksPM.queryFilter(filterProjectCreated);
+
+					expect(newProjectCreatedEvents.length).to.be.equal(2);
 				});
 
 				it("Should revert if the smart contract is paused", async () => {

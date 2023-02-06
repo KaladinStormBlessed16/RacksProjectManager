@@ -384,11 +384,13 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					expect(await projectContract.isFinished()).to.be.false;
 
-					await projectContract.finishProject(
-						500,
-						[user2.address, user1.address],
-						[70, 30]
-					);
+					expect(
+						await projectContract.finishProject(
+							500,
+							[user2.address, user1.address],
+							[70, 30]
+						)
+					).to.emit(racksPM, "ProjectFinished");
 
 					expect(await projectContract.isFinished()).to.be.true;
 

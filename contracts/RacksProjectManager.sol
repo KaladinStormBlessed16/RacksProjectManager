@@ -154,7 +154,7 @@ contract RacksProjectManager is
 		_setupRole(ADMIN_ROLE, address(newProject)); 
 
 		projectNameExists[_name] = true;
-		emit NewProjectCreated(_name, address(newProject));
+		emit NewProjectCreated(bytes32(bytes(_name)), _name, address(newProject));
 	}
 
 	/**
@@ -441,7 +441,6 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 * @dev Function called from the Project contract whe is deleted
 	 */ 
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
@@ -455,6 +454,17 @@ contract RacksProjectManager is
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);
 
-		emit ProjectDeleted(projectName, msg.sender);
+		emit ProjectDeleted(msg.sender);
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
+	function finishProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		emit ProjectFinished(msg.sender);
 	}
 }

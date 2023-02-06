@@ -129,7 +129,7 @@ contract Project is AccessControl {
 		uint256 _reputationLevel,
 		uint256 _maxContributorsNumber
 	) {
-		if(bytes(_name).length > 30) revert RacksProjectManager_InvalidParameterErr();
+		if(bytes(_name).length > 32) revert RacksProjectManager_InvalidParameterErr();
 
 		racksPM = _racksPM;
 		name = _name;
@@ -211,6 +211,9 @@ contract Project is AccessControl {
 		) revert Project_InvalidParameterErr();
 
 		projectState = FINISHED;
+
+		racksPM.finishProject();
+
 		uint256 totalParticipationWeight = 0;
 		unchecked {
 			for (uint256 i = 0; i < _contributors.length; i++) {
