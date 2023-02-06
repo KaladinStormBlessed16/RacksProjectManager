@@ -59,6 +59,7 @@ contract RacksProjectManager is
 	mapping(address => bool) private accountIsBanned;
 	mapping(address => uint256) private projectId;
 	mapping(address => Contributor) private contributorsData;
+	mapping(string => bool) private projectNameExists;
 
 	/**
 	 * @dev Only callable by Admins
@@ -149,7 +150,9 @@ contract RacksProjectManager is
 		projectId[address(newProject)] = progressiveId;
 		projectsList.pushFront(progressiveId);
 
-		_setupRole(ADMIN_ROLE, address(newProject));
+		_setupRole(ADMIN_ROLE, address(newProject)); 
+
+		projectNameExists[_name] = true;
 		emit NewProjectCreated(_name, address(newProject));
 	}
 
@@ -442,6 +445,8 @@ contract RacksProjectManager is
 		uint256 id = projectId[msg.sender];
 
 		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		projectNameExists[projectStore[id].getName()] = false;
 
 		projectId[msg.sender] = 0;
 		projectsList.remove(id);

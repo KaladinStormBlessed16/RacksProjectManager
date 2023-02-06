@@ -91,6 +91,13 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						racksPM,
 						"RacksProjectManager_InvalidParameterErr"
 					);
+
+					await expect(
+						racksPM.createProject("Project1", ethers.utils.parseEther("100"), 1, 2)
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
 				});
 
 				it("Should create project and then deleted correctly", async () => {
