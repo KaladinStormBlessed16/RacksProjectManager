@@ -335,23 +335,20 @@ contract RacksProjectManager is
 
 	/**
 	 * @notice Get projects depending on Level
-	 * @dev Only callable by Holders
+	 * @param reputationLv Reputation Level
 	 */
-	function getProjects() public view onlyHolder returns (Project[] memory) {
-		if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProjects();
+	function getProjects(uint256 reputationLv) public view returns (Project[] memory) {
 		Project[] memory filteredProjects = new Project[](
 			projectsList.sizeOf()
 		);
 
 		unchecked {
-			uint256 callerReputationLv = getContributorLevel(msg.sender);
-
 			uint256 j = 0;
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
 			while (i != 0 && existNext) {
 				if (
-					projectStore[i].getReputationLevel() <= callerReputationLv
+					projectStore[i].getReputationLevel() <= reputationLv
 				) {
 					filteredProjects[j] = projectStore[i];
 					++j;
@@ -373,7 +370,7 @@ contract RacksProjectManager is
 		return holderValidation.isHolder(_account) != address(0);
 	}
 
-	function getAllProjects() private view returns (Project[] memory) {
+	function getAllProjects() public view returns (Project[] memory) {
 		Project[] memory allProjects = new Project[](projectsList.sizeOf());
 
 		uint256 j = 0;

@@ -373,7 +373,9 @@ contract Project is AccessControl {
 					uint256 amount = projectFunds[funder];
 
 					projectFunds[funder] = 0;
+
 					totalAmountFunded -= amount;
+
 					bool successTransfer = erc20racksPM.transfer(
 						funder,
 						amount
