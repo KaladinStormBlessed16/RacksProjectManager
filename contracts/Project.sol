@@ -177,35 +177,33 @@ contract Project is AccessControl {
 		contributorId[contributor.wallet] = progressiveId;
 
 		emit NewProjectContributorsRegistered(msg.sender);
+
 		if (colateralCost > 0) {
-			bool success = erc20racksPM.transferFrom(
-				msg.sender,
-				address(this),
-				colateralCost
-			);
-			if (!success) revert Project_Erc20TransferFailed();
+			transferERC20ToThisContract(msg.sender, colateralCost);
 		}
+	}
+
+	struct ContributorParticipation{
+		address contributor;
+		uint256 participation;
 	}
 
 	/**
 	 * @notice Finish Project
 	 * @dev Only callable by Admins when the project isn't completed
-	 * - The contributors and participationWeights array must have the same size of the project contributors list.
-	 * - If there is a banned Contributor in the project, you have to pass his address and participation (should be 0) anyways.
-	 * - The sum of @param _participationWeights can not be more than 100
+	 * - The contributors and participation array must have the same size of the project contributors list.
+	 * - The sum of participation can not be more than 100
 	 * @param _totalReputationPointsReward Total reputation points to distribute
-	 * @param _contributors Array of contributors addresses
-	 * @param _participationWeights Array of participation weights of each contributor (in percentage)
+	 * @param _contributorsParticipation Array of contributors addresses
+	 * and participation weights of each contributor (in percentage)
 	 */
 	function finishProject(
 		uint256 _totalReputationPointsReward,
-		address[] memory _contributors,
-		uint256[] memory _participationWeights
+		ContributorParticipation[] memory _contributorsParticipation
 	) external onlyAdmin isNotFinished isNotPaused isNotDeleted isNotPending {
 		if (
 			_totalReputationPointsReward <= 0 ||
-			_contributors.length != contributorList.sizeOf() ||
-			_participationWeights.length != contributorList.sizeOf()
+			_contributorsParticipation.length != contributorList.sizeOf() 
 		) revert Project_InvalidParameterErr();
 
 		projectState = FINISHED;
@@ -213,18 +211,21 @@ contract Project is AccessControl {
 		racksPM.approveProject();
 
 		uint256 totalParticipationWeight = 0;
+
 		unchecked {
-			for (uint256 i = 0; i < _contributors.length; i++) {
-				if (!isContributorInProject(_contributors[i]))
+			for (uint256 i = 0; i < _contributorsParticipation.length; i++) {
+
+				address contributor = _contributorsParticipation[i].contributor;
+				uint256 participationWeight = _contributorsParticipation[i].participation;
+
+				if (!isContributorInProject(contributor))
 					revert Project_ContributorNotInProject();
 
-				uint256 participationWeight = _participationWeights[i];
+				participationOfContributors[contributor] = participationWeight;
 
-				participationOfContributors[
-					_contributors[i]
-				] = participationWeight;
 				totalParticipationWeight += participationWeight;
 			}
+
 			if (totalParticipationWeight > 100)
 				revert Project_InvalidParameterErr();
 		}
@@ -232,23 +233,19 @@ contract Project is AccessControl {
 			(bool existNext, uint256 i) = contributorList.getNextNode(0);
 
 			while (i != 0 && existNext) {
-				address contrAddress = projectContributors[i].wallet;
+				address contributorAddr = projectContributors[i].wallet;
 
 				uint256 reputationToIncrease = (_totalReputationPointsReward *
-					participationOfContributors[contrAddress]) / 100;
+					participationOfContributors[contributorAddr]) / 100;
 
 				racksPM.modifyContributorRP(
-					contrAddress,
+					contributorAddr,
 					reputationToIncrease,
 					true
 				);
 
 				if (colateralCost > 0) {
-					bool success = erc20racksPM.transfer(
-						contrAddress,
-						colateralCost
-					);
-					if (!success) revert Project_Erc20TransferFailed();
+					transferERC20(contributorAddr, colateralCost);
 				}
 
 				(existNext, i) = contributorList.getNextNode(i);
@@ -277,12 +274,8 @@ contract Project is AccessControl {
 		projectFunds[msg.sender] += _amount;
 
 		emit ProjectFunded(msg.sender, _amount);
-		bool success = erc20racksPM.transferFrom(
-			msg.sender,
-			address(this),
-			_amount
-		);
-		if (!success) revert Project_Erc20TransferFailed();
+
+		transferERC20ToThisContract(msg.sender, _amount);
 	}
 
 	/**
@@ -310,6 +303,16 @@ contract Project is AccessControl {
 	//  Helper Functions //
 	//////////////////////
 
+	function transferERC20(address _to, uint256 _amount) private {
+		bool success = erc20racksPM.transfer(_to, _amount);
+		if (!success) revert Project_Erc20TransferFailed();
+	}
+
+	function transferERC20ToThisContract(address _from, uint256 _amount) private {
+		bool success = erc20racksPM.transferFrom(_from, address(this), _amount);
+		if (!success) revert Project_Erc20TransferFailed();
+	}
+
 	/**
 	 * @notice Used to give away profits
 	 * @dev Only callable by Admins when project completed
@@ -325,20 +328,19 @@ contract Project is AccessControl {
 			(bool existNext, uint256 i) = contributorList.getNextNode(0);
 
 			while (i != 0 && existNext) {
-				address contrAddress = projectContributors[i].wallet;
+				address contributorAddr = projectContributors[i].wallet;
 				if (erc20racksPM.balanceOf(address(this)) > 0) {
-					bool successTransfer = erc20racksPM.transfer(
-						contrAddress,
+					transferERC20(
+						contributorAddr,
 						(projectBalanceERC20 *
-							participationOfContributors[contrAddress]) / 100
+							participationOfContributors[contributorAddr]) / 100
 					);
-					if (!successTransfer) revert Project_Erc20TransferFailed();
 				}
 
 				if (address(this).balance > 0) {
-					(bool success, ) = contrAddress.call{
+					(bool success, ) = contributorAddr.call{
 						value: (projectBalanceEther *
-							participationOfContributors[contrAddress]) / 100
+							participationOfContributors[contributorAddr]) / 100
 					}("");
 					if (!success) revert Project_TransferGiveAwayFailedErr();
 				}
@@ -376,12 +378,7 @@ contract Project is AccessControl {
 
 					totalAmountFunded -= amount;
 
-					bool successTransfer = erc20racksPM.transfer(
-						funder,
-						amount
-					);
-
-					if (!successTransfer) revert Project_Erc20TransferFailed();
+					transferERC20(funder, amount);
 				}
 			}
 		}
@@ -403,8 +400,7 @@ contract Project is AccessControl {
 		contributorList.remove(id);
 
 		if (_returnColateral && colateralCost > 0) {
-			bool success = erc20racksPM.transfer(_contributor, colateralCost);
-			if (!success) revert Project_Erc20TransferFailed();
+			transferERC20(_contributor, colateralCost);
 		}
 	}
 

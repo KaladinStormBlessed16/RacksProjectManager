@@ -55,11 +55,11 @@ contract RacksProjectManager is
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private projectsList;
 	mapping(uint256 => Project) private projectStore;
-
-	mapping(address => bool) private accountIsBanned;
-	mapping(address => uint256) private projectId;
-	mapping(address => Contributor) private contributorsData;
+    mapping(address => uint256) private projectId;
 	mapping(string => bool) private projectNameExists;
+
+	mapping(address => bool) private contributorIsBanned;
+	mapping(address => Contributor) private contributorsData;
 
 	/**
 	 * @dev Only callable by Admins
@@ -128,10 +128,9 @@ contract RacksProjectManager is
 		uint256 _maxContributorsNumber
 	) external isNotPaused {
 		if (
-			_colateralCost < 0 ||
-			_reputationLevel <= 0 ||
-			_maxContributorsNumber <= 0 ||
-			bytes(_name).length <= 0 ||
+			_reputationLevel == 0 ||
+			_maxContributorsNumber == 0 ||
+			bytes(_name).length == 0 ||
 			bytes(_name).length > 30 || 
 			projectNameExists[_name]
 		) revert RacksProjectManager_InvalidParameterErr();
@@ -147,6 +146,7 @@ contract RacksProjectManager is
 		unchecked{
 			++progressiveId;
 		}
+
 		projectStore[progressiveId] = newProject;
 		projectId[address(newProject)] = progressiveId;
 		projectsList.pushFront(progressiveId);
@@ -167,6 +167,7 @@ contract RacksProjectManager is
 
 		contributors.push(msg.sender);
 		contributorsData[msg.sender] = Contributor(msg.sender, 0, false);
+
 		emit NewContributorRegistered(msg.sender);
 	}
 
@@ -206,7 +207,7 @@ contract RacksProjectManager is
 		address _account,
 		bool _state
 	) external onlyAdmin {
-		accountIsBanned[_account] = _state;
+		contributorIsBanned[_account] = _state;
 
 		if (_state == true) {
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
@@ -263,6 +264,44 @@ contract RacksProjectManager is
 	 */
 	function setIsPaused(bool _newPausedValue) public onlyAdmin {
 		paused = _newPausedValue;
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
+	function deleteProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		projectNameExists[projectStore[id].getName()] = false;
+
+		projectId[msg.sender] = 0;
+		projectsList.remove(id);
+
+		emit ProjectDeleted(msg.sender);
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
+	function finishProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		emit ProjectFinished(msg.sender);
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */ 
+	function approveProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		emit ProjectApproved(msg.sender);
 	}
 
 	/**
@@ -330,7 +369,7 @@ contract RacksProjectManager is
 	function isContributorBanned(
 		address _account
 	) external view override returns (bool) {
-		return accountIsBanned[_account];
+		return contributorIsBanned[_account];
 	}
 
 	/**
@@ -436,43 +475,5 @@ contract RacksProjectManager is
 		return paused;
 	}
 
-	/**
-	 * @inheritdoc IRacksProjectManager
-	 */ 
-	function deleteProject() external override {
-		uint256 id = projectId[msg.sender];
 
-		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
-
-		string memory projectName = projectStore[id].getName();
-
-		projectNameExists[projectName] = false;
-
-		projectId[msg.sender] = 0;
-		projectsList.remove(id);
-
-		emit ProjectDeleted(msg.sender);
-	}
-
-	/**
-	 * @inheritdoc IRacksProjectManager
-	 */ 
-	function finishProject() external override {
-		uint256 id = projectId[msg.sender];
-
-		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
-
-		emit ProjectFinished(msg.sender);
-	}
-
-	/**
-	 * @inheritdoc IRacksProjectManager
-	 */ 
-	function approveProject() external override {
-		uint256 id = projectId[msg.sender];
-
-		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
-
-		emit ProjectApproved(msg.sender);
-	}
 }
