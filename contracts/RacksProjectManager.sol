@@ -58,7 +58,6 @@ contract RacksProjectManager is
 	mapping(address => uint256) private projectId;
 	mapping(string => bool) private projectNameExists;
 
-	mapping(address => bool) private contributorIsBanned;
 	mapping(address => Contributor) private contributorsData;
 
 	/**
@@ -210,7 +209,7 @@ contract RacksProjectManager is
 		address _account,
 		bool _state
 	) external onlyAdmin {
-		contributorIsBanned[_account] = _state;
+		contributorsData[_account].banned = _state;
 
 		if (_state == true) {
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
@@ -233,7 +232,7 @@ contract RacksProjectManager is
 	 */
 	function setAccountToContributorData(
 		address _account,
-		Contributor memory _newData
+		Contributor calldata _newData
 	) public override onlyAdmin {
 		contributorsData[_account] = _newData;
 	}
@@ -372,8 +371,8 @@ contract RacksProjectManager is
 	 */
 	function isContributorBanned(
 		address _account
-	) external view override returns (bool) {
-		return contributorIsBanned[_account];
+	) public view override returns (bool) {
+		return contributorsData[_account].banned;
 	}
 
 	/**

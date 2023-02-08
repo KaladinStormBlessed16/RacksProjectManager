@@ -196,7 +196,7 @@ contract Project is AccessControl {
 	 */
 	function finishProject(
 		uint256 _totalReputationPointsReward,
-		ContributorParticipation[] memory _contributorsParticipation
+		ContributorParticipation[] calldata _contributorsParticipation
 	) external onlyAdmin isNotFinished isNotPaused isNotDeleted isNotPending {
 		if (
 			_totalReputationPointsReward <= 0 ||
