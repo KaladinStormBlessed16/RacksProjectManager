@@ -19,8 +19,12 @@ interface IRacksProjectManager {
 	/**
 	 * @notice Event emitted when a new project is created in RacksProjectsManager
 	 */
-	event NewProjectCreated(bytes32 indexed indexedName, string name, address newProjectAddress);
-	
+	event NewProjectCreated(
+		bytes32 indexed indexedName,
+		string name,
+		address newProjectAddress
+	);
+
 	/**
 	 * @notice Event emitted when a project is deleted in RacksProjectsManager
 	 */
@@ -31,12 +35,10 @@ interface IRacksProjectManager {
 	 */
 	event ProjectFinished(address indexed finishedProjectAddress);
 
-
 	/**
-	 * @notice 
+	 * @notice
 	 */
 	event ProjectApproved(address indexed provedProjectAddress);
-
 
 	/////////////////////////////
 	///   Abstract functions  ///
@@ -94,13 +96,13 @@ interface IRacksProjectManager {
 	function deleteProject() external;
 
 	/**
-	 * @notice Finish the project associated with the address of msg.sender 
+	 * @notice Finish the project associated with the address of msg.sender
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function finishProject() external;
 
 	/**
-	 * @notice Approve the project associated with the address of msg.sender 
+	 * @notice Approve the project associated with the address of msg.sender
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function approveProject() external;

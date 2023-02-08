@@ -10,13 +10,8 @@ import "./library/StructuredLinkedList.sol";
 
 contract Project is AccessControl {
 	/// Events
-	event NewProjectContributorsRegistered(
-		address newProjectContributor
-	);
-	event ProjectFunded(
-		address funderWallet,
-		uint256 amount
-	);
+	event NewProjectContributorsRegistered(address newProjectContributor);
+	event ProjectFunded(address funderWallet, uint256 amount);
 
 	/// Enumerations
 	enum ProjectState {
@@ -74,7 +69,7 @@ contract Project is AccessControl {
 
 	/**
 	 * @notice Check that sender is Admin
-	 */ 
+	 */
 	modifier onlyAdmin() {
 		if (!hasRole(ADMIN_ROLE, msg.sender)) revert Project_NotAdminErr();
 		_;
@@ -84,21 +79,22 @@ contract Project is AccessControl {
 	 * @notice Check that sender is Contributor
 	 */
 	modifier onlyContributor() {
-		if (!racksPM.isWalletContributor(msg.sender)) revert Project_IsNotContributor();
+		if (!racksPM.isWalletContributor(msg.sender))
+			revert Project_IsNotContributor();
 		_;
 	}
 
 	/**
 	 * @notice Check that the smart contract is not Paused
-	 */ 
+	 */
 	modifier isNotPaused() {
 		if (racksPM.isPaused()) revert Project_IsPausedErr();
 		_;
 	}
 
-	/** 
+	/**
 	 * @notice Check that the smart contract is not Pending
-	 */ 
+	 */
 	modifier isNotPending() {
 		if (projectState == PENDING) revert Project_IsPendingErr();
 		_;
@@ -106,7 +102,7 @@ contract Project is AccessControl {
 
 	/**
 	 * @notice Check that the smart contract is not Deleted
-	 */ 
+	 */
 	modifier isNotDeleted() {
 		if (projectState == DELETED) revert Project_IsDeletedErr();
 		_;
@@ -127,7 +123,8 @@ contract Project is AccessControl {
 		uint256 _reputationLevel,
 		uint256 _maxContributorsNumber
 	) {
-		if(bytes(_name).length > 32) revert RacksProjectManager_InvalidParameterErr();
+		if (bytes(_name).length > 32)
+			revert RacksProjectManager_InvalidParameterErr();
 
 		racksPM = _racksPM;
 		name = _name;
@@ -183,7 +180,7 @@ contract Project is AccessControl {
 		}
 	}
 
-	struct ContributorParticipation{
+	struct ContributorParticipation {
 		address contributor;
 		uint256 participation;
 	}
@@ -203,7 +200,7 @@ contract Project is AccessControl {
 	) external onlyAdmin isNotFinished isNotPaused isNotDeleted isNotPending {
 		if (
 			_totalReputationPointsReward <= 0 ||
-			_contributorsParticipation.length != contributorList.sizeOf() 
+			_contributorsParticipation.length != contributorList.sizeOf()
 		) revert Project_InvalidParameterErr();
 
 		projectState = FINISHED;
@@ -214,9 +211,9 @@ contract Project is AccessControl {
 
 		unchecked {
 			for (uint256 i = 0; i < _contributorsParticipation.length; i++) {
-
 				address contributor = _contributorsParticipation[i].contributor;
-				uint256 participationWeight = _contributorsParticipation[i].participation;
+				uint256 participationWeight = _contributorsParticipation[i]
+					.participation;
 
 				if (!isContributorInProject(contributor))
 					revert Project_ContributorNotInProject();
@@ -267,7 +264,7 @@ contract Project is AccessControl {
 
 		totalAmountFunded += _amount;
 
-		if (projectFunds[msg.sender] == 0){
+		if (projectFunds[msg.sender] == 0) {
 			funders.push(msg.sender);
 		}
 
@@ -289,7 +286,8 @@ contract Project is AccessControl {
 		isNotDeleted
 		isNotPending
 	{
-		if (projectState != ProjectState.Finished) revert Project_NotCompletedErr();
+		if (projectState != ProjectState.Finished)
+			revert Project_NotCompletedErr();
 
 		if (
 			address(this).balance <= 0 &&
@@ -303,12 +301,28 @@ contract Project is AccessControl {
 	//  Helper Functions //
 	//////////////////////
 
+	/**
+	 * Transfer ERC20 token from this contract to the _to address
+	 * @param _to address to transfer the ERC20 token to
+	 * @param _amount amount to transfer
+	 * @dev If the ERC20 transfer fails, the transaction is reverted
+	 */
 	function transferERC20(address _to, uint256 _amount) private {
 		bool success = erc20racksPM.transfer(_to, _amount);
 		if (!success) revert Project_Erc20TransferFailed();
 	}
 
-	function transferERC20ToThisContract(address _from, uint256 _amount) private {
+	/**
+	 * Transfer ERC20 token from the _from address to this contract
+	 * @param _from address to transfer the ERC20 token from
+	 * @param _amount amount to transfer
+	 * @dev Need the approval of the ERC20 token from the _from address
+	 * @dev If the ERC20 transfer fails, the transaction is reverted
+	 */
+	function transferERC20ToThisContract(
+		address _from,
+		uint256 _amount
+	) private {
 		bool success = erc20racksPM.transferFrom(_from, address(this), _amount);
 		if (!success) revert Project_Erc20TransferFailed();
 	}
@@ -318,12 +332,11 @@ contract Project is AccessControl {
 	 * @dev Only callable by Admins when project completed
 	 */
 	function shareProfits() private onlyAdmin {
-		if (projectState != ProjectState.Finished) revert Project_NotCompletedErr();
+		if (projectState != ProjectState.Finished)
+			revert Project_NotCompletedErr();
 
 		unchecked {
-			uint256 projectBalanceERC20 = erc20racksPM.balanceOf(
-				address(this)
-			);
+			uint256 projectBalanceERC20 = erc20racksPM.balanceOf(address(this));
 			uint256 projectBalanceEther = address(this).balance;
 			(bool existNext, uint256 i) = contributorList.getNextNode(0);
 
@@ -393,7 +406,8 @@ contract Project is AccessControl {
 		address _contributor,
 		bool _returnColateral
 	) public onlyAdmin isNotDeleted {
-		if (!isContributorInProject(_contributor)) revert Project_ContributorNotInProject();
+		if (!isContributorInProject(_contributor))
+			revert Project_ContributorNotInProject();
 
 		uint256 id = contributorId[_contributor];
 		contributorId[_contributor] = 0;
@@ -413,7 +427,7 @@ contract Project is AccessControl {
 	 * @dev Only callable by Admins when the project has no Contributor yet and is pending.
 	 */
 	function approveProject() external onlyAdmin isNotPaused isNotDeleted {
-		if (projectState == PENDING){ 
+		if (projectState == PENDING) {
 			projectState = ACTIVE;
 			racksPM.approveProject();
 		}
@@ -475,12 +489,12 @@ contract Project is AccessControl {
 
 	/**
 	 * @notice Get the reputation level of the project
-	 */ 
+	 */
 	function getReputationLevel() external view returns (uint256) {
 		return reputationLevel;
 	}
 
-	/** 
+	/**
 	 * @notice Get the maximum contributor that can be in the project
 	 */
 	function getMaxContributors() external view returns (uint256) {
@@ -489,7 +503,7 @@ contract Project is AccessControl {
 
 	/**
 	 * @notice Get total number of contributors
-	 */ 
+	 */
 	function getNumberOfContributors() external view returns (uint256) {
 		return contributorList.sizeOf();
 	}
@@ -520,7 +534,7 @@ contract Project is AccessControl {
 
 	/**
 	 * @notice Get contributor by address
-	 */ 
+	 */
 	function getContributorByAddress(
 		address _account
 	) external view onlyAdmin returns (Contributor memory) {
@@ -539,31 +553,32 @@ contract Project is AccessControl {
 
 	/**
 	 * @notice Get the participation weight in percent
-	 */ 
+	 */
 	function getContributorParticipation(
 		address _contributor
 	) external view returns (uint256) {
-		if (projectState != ProjectState.Finished) revert Project_NotCompletedErr();
+		if (projectState != ProjectState.Finished)
+			revert Project_NotCompletedErr();
 		return participationOfContributors[_contributor];
 	}
 
 	/**
 	 *  @notice Get the balance of funds given by an address
-	 */ 
+	 */
 	function getAccountFunds(address _account) external view returns (uint256) {
 		return projectFunds[_account];
 	}
 
 	/**
 	 * @notice Get total amount of funds a Project got since creation
-	 */ 
+	 */
 	function getTotalAmountFunded() external view returns (uint256) {
 		return totalAmountFunded;
 	}
 
 	/**
 	 * @notice Returns whether the project is pending or not
-	 */ 
+	 */
 	function isPending() external view returns (bool) {
 		return projectState == PENDING;
 	}
@@ -577,14 +592,14 @@ contract Project is AccessControl {
 
 	/**
 	 *  @notice Return true is the project is completed, otherwise return false
-	 */ 
+	 */
 	function isFinished() external view returns (bool) {
 		return projectState == FINISHED;
 	}
 
 	/**
 	 *  @notice Returns whether the project is deleted or not
-	 */ 
+	 */
 	function isDeleted() external view returns (bool) {
 		return projectState == DELETED;
 	}

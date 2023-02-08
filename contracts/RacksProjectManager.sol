@@ -14,7 +14,7 @@ import "./library/StructuredLinkedList.sol";
 import "./library/Math.sol";
 
 /**
- * 
+ *
  *               ▟██████████   █████    ▟███████████   █████████████
  *             ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
  *            ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
@@ -32,7 +32,7 @@ import "./library/Math.sol";
 /**
  * @title RacksProjectManager
  * @author KaladinStormblessed16 and Daniel Sintimbrean
- * 
+ *
  * Powered by RacksLabs
  */
 contract RacksProjectManager is
@@ -55,7 +55,7 @@ contract RacksProjectManager is
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private projectsList;
 	mapping(uint256 => Project) private projectStore;
-    mapping(address => uint256) private projectId;
+	mapping(address => uint256) private projectId;
 	mapping(string => bool) private projectNameExists;
 
 	mapping(address => bool) private contributorIsBanned;
@@ -65,7 +65,8 @@ contract RacksProjectManager is
 	 * @dev Only callable by Admins
 	 */
 	modifier onlyAdmin() {
-		if (!hasRole(ADMIN_ROLE, msg.sender)) revert RacksProjectManager_NotAdminErr();
+		if (!hasRole(ADMIN_ROLE, msg.sender))
+			revert RacksProjectManager_NotAdminErr();
 		_;
 	}
 
@@ -73,10 +74,8 @@ contract RacksProjectManager is
 	 * @dev Only callable by Holders or Admins
 	 */
 	modifier onlyHolder() {
-		if (
-			!isHolder(msg.sender) &&
-			!hasRole(ADMIN_ROLE, msg.sender)
-		) revert RacksProjectManager_NotHolderErr();
+		if (!isHolder(msg.sender) && !hasRole(ADMIN_ROLE, msg.sender))
+			revert RacksProjectManager_NotHolderErr();
 		_;
 	}
 
@@ -131,7 +130,7 @@ contract RacksProjectManager is
 			_reputationLevel == 0 ||
 			_maxContributorsNumber == 0 ||
 			bytes(_name).length == 0 ||
-			bytes(_name).length > 30 || 
+			bytes(_name).length > 30 ||
 			projectNameExists[_name]
 		) revert RacksProjectManager_InvalidParameterErr();
 
@@ -143,7 +142,7 @@ contract RacksProjectManager is
 			_maxContributorsNumber
 		);
 
-		unchecked{
+		unchecked {
 			++progressiveId;
 		}
 
@@ -151,10 +150,14 @@ contract RacksProjectManager is
 		projectId[address(newProject)] = progressiveId;
 		projectsList.pushFront(progressiveId);
 
-		_setupRole(ADMIN_ROLE, address(newProject)); 
+		_setupRole(ADMIN_ROLE, address(newProject));
 
 		projectNameExists[_name] = true;
-		emit NewProjectCreated(bytes32(bytes(_name)), _name, address(newProject));
+		emit NewProjectCreated(
+			bytes32(bytes(_name)),
+			_name,
+			address(newProject)
+		);
 	}
 
 	/**
@@ -245,7 +248,8 @@ contract RacksProjectManager is
 		uint256 _grossReputationPoints,
 		bool _add
 	) public override onlyAdmin {
-		if (_grossReputationPoints <= 0) revert RacksProjectManager_InvalidParameterErr();
+		if (_grossReputationPoints <= 0)
+			revert RacksProjectManager_InvalidParameterErr();
 
 		Contributor memory contributor = contributorsData[_account];
 
@@ -268,7 +272,7 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function deleteProject() external override {
 		uint256 id = projectId[msg.sender];
 
@@ -284,7 +288,7 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function finishProject() external override {
 		uint256 id = projectId[msg.sender];
 
@@ -295,7 +299,7 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function approveProject() external override {
 		uint256 id = projectId[msg.sender];
 
@@ -338,7 +342,7 @@ contract RacksProjectManager is
 		return hasRole(ADMIN_ROLE, _account);
 	}
 
-	/** 
+	/**
 	 * @notice Returns Holder Validation contract address
 	 */
 	function getHolderValidationInterface()
@@ -349,9 +353,9 @@ contract RacksProjectManager is
 		return holderValidation;
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function getERC20Interface() public view override returns (IERC20) {
 		return erc20;
 	}
@@ -363,7 +367,7 @@ contract RacksProjectManager is
 		return owner();
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
 	 */
 	function isContributorBanned(
@@ -376,7 +380,9 @@ contract RacksProjectManager is
 	 * @notice Get projects depending on Level
 	 * @param reputationLv Reputation Level
 	 */
-	function getProjects(uint256 reputationLv) public view returns (Project[] memory) {
+	function getProjects(
+		uint256 reputationLv
+	) public view returns (Project[] memory) {
 		Project[] memory filteredProjects = new Project[](
 			projectsList.sizeOf()
 		);
@@ -386,9 +392,7 @@ contract RacksProjectManager is
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
 			while (i != 0 && existNext) {
-				if (
-					projectStore[i].getReputationLevel() <= reputationLv
-				) {
+				if (projectStore[i].getReputationLevel() <= reputationLv) {
 					filteredProjects[j] = projectStore[i];
 					++j;
 				}
@@ -399,10 +403,10 @@ contract RacksProjectManager is
 		return filteredProjects;
 	}
 
-	/** 
-	 * @notice Returns true if _account is have at least one NFT of the collections 
+	/**
+	 * @notice Returns true if _account is have at least one NFT of the collections
 	 * authorized otherwise returns false
-	 * 
+	 *
 	 * @param _account Address of the account to check
 	 */
 	function isHolder(address _account) public view returns (bool) {
@@ -415,7 +419,7 @@ contract RacksProjectManager is
 		uint256 j = 0;
 		(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
-		unchecked{
+		unchecked {
 			while (i != 0 && existNext) {
 				allProjects[j] = projectStore[i];
 				++j;
@@ -426,9 +430,9 @@ contract RacksProjectManager is
 		return allProjects;
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function isWalletContributor(
 		address _account
 	) public view override returns (bool) {
@@ -446,7 +450,7 @@ contract RacksProjectManager is
 		return calculateLevel(point);
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
 	 */
 	function getContributorData(
@@ -470,10 +474,8 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function isPaused() external view override returns (bool) {
 		return paused;
 	}
-
-
 }
