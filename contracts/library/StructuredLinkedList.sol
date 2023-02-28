@@ -89,12 +89,12 @@ library StructuredLinkedList {
 	 * @param _node id of the node to step from
 	 * @return bool, uint256 true if node exists or false otherwise, previous node
 	 */
-	// function getPreviousNode(
-	// 	List storage self,
-	// 	uint256 _node
-	// ) internal view returns (bool, uint256) {
-	// 	return getAdjacent(self, _node, _PREV);
-	// }
+	function getPreviousNode(
+		List storage self,
+		uint256 _node
+	) internal view returns (bool, uint256) {
+		return getAdjacent(self, _node, _PREV);
+	}
 
 	/**
 	 * @dev Insert node `_new` beside existing node `_node` in direction `_NEXT`.
@@ -103,13 +103,13 @@ library StructuredLinkedList {
 	 * @param _new  new node to insert
 	 * @return bool true if success, false otherwise
 	 */
-	// function insertAfter(
-	// 	List storage self,
-	// 	uint256 _node,
-	// 	uint256 _new
-	// ) internal returns (bool) {
-	// 	return _insert(self, _node, _new, _NEXT);
-	// }
+	function insertAfter(
+		List storage self,
+		uint256 _node,
+		uint256 _new
+	) internal returns (bool) {
+		return _insert(self, _node, _new, _NEXT);
+	}
 
 	/**
 	 * @dev Insert node `_new` beside existing node `_node` in direction `_PREV`.
@@ -118,13 +118,13 @@ library StructuredLinkedList {
 	 * @param _new  new node to insert
 	 * @return bool true if success, false otherwise
 	 */
-	// function insertBefore(
-	// 	List storage self,
-	// 	uint256 _node,
-	// 	uint256 _new
-	// ) internal returns (bool) {
-	// 	return _insert(self, _node, _new, _PREV);
-	// }
+	function insertBefore(
+		List storage self,
+		uint256 _node,
+		uint256 _new
+	) internal returns (bool) {
+		return _insert(self, _node, _new, _PREV);
+	}
 
 	/**
 	 * @dev Removes an entry from the linked list
@@ -172,12 +172,12 @@ library StructuredLinkedList {
 	 * @param _node new entry to push to the tail
 	 * @return bool true if success, false otherwise
 	 */
-	// function pushBack(
-	// 	List storage self,
-	// 	uint256 _node
-	// ) internal returns (bool) {
-	// 	return _push(self, _node, _PREV);
-	// }
+	function pushBack(
+		List storage self,
+		uint256 _node
+	) internal returns (bool) {
+		return _push(self, _node, _PREV);
+	}
 
 	/**
 	 * @dev Pushes an entry to the head of the linked list
@@ -200,14 +200,14 @@ library StructuredLinkedList {
 	 * @param _direction pop from the head (_NEXT) or the tail (_PREV)
 	 * @return uint256 the removed node
 	 */
-	// function _pop(
-	// 	List storage self,
-	// 	bool _direction
-	// ) private returns (uint256) {
-	// 	uint256 adj;
-	// 	(, adj) = getAdjacent(self, _HEAD, _direction);
-	// 	return remove(self, adj);
-	// }
+	function _pop(
+		List storage self,
+		bool _direction
+	) private returns (uint256) {
+		uint256 adj;
+		(, adj) = getAdjacent(self, _HEAD, _direction);
+		return remove(self, adj);
+	}
 
 	/**
 	 * @dev Insert node `_new` beside existing node `_node` in direction `_direction`.

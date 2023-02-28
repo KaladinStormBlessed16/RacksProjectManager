@@ -25,7 +25,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				erc20 = erc20Contract.connect(deployer);
 
 				await racksPM.createProject("Project1", ethers.utils.parseEther("100"), 1, 2);
-				const projectAddress = (await racksPM.getAllProjects())[0];
+				const projectAddress = await (await racksPM.getProjects())[0];
 
 				projectContract = await ethers.getContractAt("Project", projectAddress);
 				await projectContract.approveProject();
@@ -122,7 +122,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 				it("Should revert if Contributor has no Reputation Level Enough with Project_ContributorHasNoReputationEnoughErr", async () => {
 					await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 3);
-					const projects = await racksPM.getAllProjects();
+					const projects = await racksPM.getProjects();
 					const projectAddress2 = projects[0];
 
 					const Project2 = await ethers.getContractFactory("Project");
@@ -244,7 +244,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			describe("Finish Project", () => {
 				it("Should revert with Project_NotAdminErr", async () => {
 					await expect(
-						projectContract.connect(user1).finishProject(500, [[user2.address, 20]])
+						projectContract.connect(user1).finishProject(500, [user2.address], [20])
 					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 				});
 
@@ -257,7 +257,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await projectContract.connect(user1).registerProjectContributor();
 
 					await expect(
-						projectContract.finishProject(500, [[user2.address, 20]])
+						projectContract.finishProject(500, [user2.address], [20])
 					).to.be.revertedWithCustomError(
 						projectContract,
 						"Project_ContributorNotInProject"
@@ -273,7 +273,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await projectContract.connect(user2).registerProjectContributor();
 
 					await expect(
-						projectContract.finishProject(0, [[user2.address, 20]])
+						projectContract.finishProject(500, [user2.address], [])
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
+
+					await expect(
+						projectContract.finishProject(500, [], [20])
+					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
+
+					await expect(
+						projectContract.finishProject(0, [user2.address], [20])
 					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
@@ -293,9 +301,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await projectContract.connect(user2).registerProjectContributor();
 
 					await expect(
-						projectContract.finishProject(500, [
-							[user2.address, ethers.utils.parseEther("100")],
-						])
+						projectContract.finishProject(
+							500,
+							[user2.address],
+							[ethers.utils.parseEther("100")]
+						)
 					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
@@ -327,10 +337,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					);
 
 					await expect(
-						projectContract.finishProject(500, [
-							[user2.address, 70],
-							[user1.address, 70],
-						])
+						projectContract.finishProject(500, [user2.address, user1.address], [70, 70])
 					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
 				});
 
@@ -341,10 +348,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.connect(user2)
 						.approve(projectContract.address, ethers.utils.parseEther("100"));
 					await projectContract.connect(user2).registerProjectContributor();
-					await projectContract.finishProject(500, [[user2.address, 100]]);
+					await projectContract.finishProject(500, [user2.address], [100]);
 
 					await expect(
-						projectContract.finishProject(500, [[user2.address, 100]])
+						projectContract.finishProject(500, [user2.address], [100])
 					).to.be.revertedWithCustomError(projectContract, "Project_FinishedErr");
 				});
 
@@ -377,12 +384,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					expect(await projectContract.isFinished()).to.be.false;
 
-					expect(
-						await projectContract.finishProject(500, [
-							{ contributor: user2.address, participation: 70 },
-							{ contributor: user1.address, participation: 30 },
-						])
-					).to.emit(racksPM, "ProjectFinished");
+					await projectContract.finishProject(
+						500,
+						[user2.address, user1.address],
+						[70, 30]
+					);
 
 					expect(await projectContract.isFinished()).to.be.true;
 
@@ -428,13 +434,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.approve(projectContract.address, ethers.utils.parseEther("100"));
 					await projectContract.connect(user2).registerProjectContributor();
 
-					await projectContract.finishProject(500, [
-						{ contributor: user2.address, participation: 70 },
-						{ contributor: user1.address, participation: 30 },
-					]);
+					await projectContract.finishProject(
+						500,
+						[user2.address, user1.address],
+						[70, 30]
+					);
 
 					await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 1, 3);
-					const projectAddress2 = (await racksPM.getAllProjects())[0];
+					const projectAddress2 = (await racksPM.getProjects())[0];
 
 					const Project2 = await ethers.getContractFactory("Project");
 					let project2Contract = Project2.attach(projectAddress2);
@@ -471,10 +478,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					expect(lvlUser22).to.be.equal(3);
 					expect(pcUser22.reputationPoints).to.be.equal(350);
 
-					await project2Contract.finishProject(500, [
-						[user2.address, 65],
-						[user1.address, 35],
-					]);
+					await project2Contract.finishProject(
+						500,
+						[user2.address, user1.address],
+						[65, 35]
+					);
 
 					expect(await erc20.balanceOf(user3.address)).to.be.equal(
 						ethers.utils.parseEther("9900")
@@ -522,10 +530,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await racksPM.setIsPaused(true);
 
 					await expect(
-						projectContract.finishProject(500, [
-							[user2.address, 70],
-							[user1.address, 30],
-						])
+						projectContract.finishProject(500, [user2.address, user1.address], [70, 30])
 					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 
 					await racksPM.setIsPaused(false);
@@ -545,6 +550,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 
 					await expect(
+						projectContract.setName("Project Updated")
+					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
+
+					await expect(
 						projectContract.setReputationLevel(3)
 					).to.be.revertedWithCustomError(projectContract, "Project_IsPausedErr");
 					await expect(
@@ -556,6 +565,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await await projectContract.deleteProject();
 					await expect(
 						projectContract.setColateralCost(ethers.utils.parseEther("100"))
+					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
+
+					await expect(
+						projectContract.setName("Project Updated")
 					).to.be.revertedWithCustomError(projectContract, "Project_IsDeletedErr");
 
 					await expect(
@@ -573,6 +586,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 							.setColateralCost(ethers.utils.parseEther("100"))
 					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
+						projectContract.connect(user1).setName("Project Updated")
+					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
+					await expect(
 						projectContract.connect(user1).setReputationLevel(3)
 					).to.be.revertedWithCustomError(projectContract, "Project_NotAdminErr");
 					await expect(
@@ -581,6 +597,10 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 
 				it("Should revert with Project_InvalidParameterErr", async () => {
+					await expect(projectContract.setName("")).to.be.revertedWithCustomError(
+						projectContract,
+						"Project_InvalidParameterErr"
+					);
 					await expect(
 						projectContract.setReputationLevel(0)
 					).to.be.revertedWithCustomError(projectContract, "Project_InvalidParameterErr");
@@ -598,6 +618,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await projectContract.connect(user1).registerProjectContributor();
 
 					await expect(
+						projectContract.setName("Project Updated")
+					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
+					await expect(
 						projectContract.setColateralCost(200)
 					).to.be.revertedWithCustomError(projectContract, "Project_IsNotEditableErr");
 					await expect(
@@ -614,6 +637,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				});
 
 				it("Should edit Project with new Colateral Cost, Reputation Level and Max Contributors Number", async () => {
+					projectContract.setName("Project Updated");
 					projectContract.setReputationLevel(3);
 					projectContract.setColateralCost(500);
 					projectContract.setMaxContributorsNumber(5);
@@ -631,6 +655,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						"Project_ContributorHasNoReputationEnoughErr"
 					);
 
+					const name = await projectContract.getName();
+					expect(name).to.be.equal("Project Updated");
 					const reputationLv = await projectContract.getReputationLevel();
 					expect(reputationLv.toNumber()).to.be.equal(3);
 					const colateralCost = await projectContract.getColateralCost();
@@ -677,10 +703,11 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						.approve(projectContract.address, ethers.utils.parseEther("100"));
 					await projectContract.connect(user2).registerProjectContributor();
 
-					await projectContract.finishProject(500, [
-						[user2.address, 50],
-						[user1.address, 50],
-					]);
+					await projectContract.finishProject(
+						500,
+						[user2.address, user1.address],
+						[50, 50]
+					);
 				});
 			});
 			describe("Fund Project", () => {
