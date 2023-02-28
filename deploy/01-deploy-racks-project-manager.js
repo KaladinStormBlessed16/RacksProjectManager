@@ -10,9 +10,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 	const { deploy, log } = deployments;
 	const { deployer } = await getNamedAccounts();
 	let MRCAddress;
-	const waitBlockConfirmations = developmentChains.includes(network.name)
-		? 1
-		: VERIFICATION_BLOCK_CONFIRMATIONS;
 
 	if (developmentChains.includes(network.name)) {
 		const MRCRYPTO = await deployments.get("MRCRYPTO");
@@ -25,13 +22,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 		from: deployer,
 		args: [MRCAddress],
 		log: true,
-		waitConfirmations: waitBlockConfirmations,
+		waitConfirmations: VERIFICATION_BLOCK_CONFIRMATIONS,
 	});
 	const racksProjectManager = await deploy("RacksProjectManager", {
 		from: deployer,
 		args: [holderValidation.address],
 		log: true,
-		waitConfirmations: waitBlockConfirmations,
+		waitConfirmations: VERIFICATION_BLOCK_CONFIRMATIONS,
 	});
 
 	if (deploymentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {

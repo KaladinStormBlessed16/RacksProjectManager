@@ -19,26 +19,7 @@ interface IRacksProjectManager {
 	/**
 	 * @notice Event emitted when a new project is created in RacksProjectsManager
 	 */
-	event NewProjectCreated(
-		bytes32 indexed indexedName,
-		string name,
-		address newProjectAddress
-	);
-
-	/**
-	 * @notice Event emitted when a project is deleted in RacksProjectsManager
-	 */
-	event ProjectDeleted(address indexed deletedProjectAddress);
-
-	/**
-	 * @notice Event emitted when a project is finished in RacksProjectsManager
-	 */
-	event ProjectFinished(address indexed finishedProjectAddress);
-
-	/**
-	 * @notice
-	 */
-	event ProjectApproved(address indexed provedProjectAddress);
+	event NewProjectCreated(string name, address newProjectAddress);
 
 	/////////////////////////////
 	///   Abstract functions  ///
@@ -90,22 +71,10 @@ interface IRacksProjectManager {
 	function isPaused() external view returns (bool);
 
 	/**
-	 * @notice Deletes the project associated with the address of msg.sender
+	 * @notice Deletes the project associated with the address of msg.sender Delete the project
 	 * @dev This function is called from Projects contracts when is deleted
 	 */
 	function deleteProject() external;
-
-	/**
-	 * @notice Finish the project associated with the address of msg.sender
-	 * @dev This function is called from Projects contracts when is deleted
-	 */
-	function finishProject() external;
-
-	/**
-	 * @notice Approve the project associated with the address of msg.sender
-	 * @dev This function is called from Projects contracts when is deleted
-	 */
-	function approveProject() external;
 
 	function calculateLevel(uint256 totalPoints) external returns (uint256);
 
