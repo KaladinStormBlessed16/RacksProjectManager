@@ -14,7 +14,7 @@ import "./library/StructuredLinkedList.sol";
 import "./library/Math.sol";
 
 /**
- * 
+ *
  *               ▟██████████   █████    ▟███████████   █████████████
  *             ▟████████████   █████  ▟█████████████   █████████████   ███████████▛
  *            ▐█████████████   █████▟███████▛  █████   █████████████   ██████████▛
@@ -32,7 +32,7 @@ import "./library/Math.sol";
 /**
  * @title RacksProjectManager
  * @author KaladinStormblessed16 and Daniel Sintimbrean
- * 
+ *
  * Powered by RacksLabs
  */
 contract RacksProjectManager is
@@ -55,16 +55,17 @@ contract RacksProjectManager is
 	using StructuredLinkedList for StructuredLinkedList.List;
 	StructuredLinkedList.List private projectsList;
 	mapping(uint256 => Project) private projectStore;
-
-	mapping(address => bool) private accountIsBanned;
 	mapping(address => uint256) private projectId;
+	mapping(string => bool) private projectNameExists;
+
 	mapping(address => Contributor) private contributorsData;
 
 	/**
 	 * @dev Only callable by Admins
 	 */
 	modifier onlyAdmin() {
-		if (!hasRole(ADMIN_ROLE, msg.sender)) revert RacksProjectManager_NotAdminErr();
+		if (!hasRole(ADMIN_ROLE, msg.sender))
+			revert RacksProjectManager_NotAdminErr();
 		_;
 	}
 
@@ -72,10 +73,8 @@ contract RacksProjectManager is
 	 * @dev Only callable by Holders or Admins
 	 */
 	modifier onlyHolder() {
-		if (
-			!isHolder(msg.sender) &&
-			!hasRole(ADMIN_ROLE, msg.sender)
-		) revert RacksProjectManager_NotHolderErr();
+		if (!isHolder(msg.sender) && !hasRole(ADMIN_ROLE, msg.sender))
+			revert RacksProjectManager_NotHolderErr();
 		_;
 	}
 
@@ -127,11 +126,11 @@ contract RacksProjectManager is
 		uint256 _maxContributorsNumber
 	) external isNotPaused {
 		if (
-			_colateralCost < 0 ||
-			_reputationLevel <= 0 ||
-			_maxContributorsNumber <= 0 ||
-			bytes(_name).length <= 0 ||
-			bytes(_name).length > 30
+			_reputationLevel == 0 ||
+			_maxContributorsNumber == 0 ||
+			bytes(_name).length == 0 ||
+			bytes(_name).length > 30 ||
+			projectNameExists[_name]
 		) revert RacksProjectManager_InvalidParameterErr();
 
 		Project newProject = new Project(
@@ -142,15 +141,22 @@ contract RacksProjectManager is
 			_maxContributorsNumber
 		);
 
-		unchecked{
+		unchecked {
 			++progressiveId;
 		}
+
 		projectStore[progressiveId] = newProject;
 		projectId[address(newProject)] = progressiveId;
 		projectsList.pushFront(progressiveId);
 
 		_setupRole(ADMIN_ROLE, address(newProject));
-		emit NewProjectCreated(_name, address(newProject));
+
+		projectNameExists[_name] = true;
+		emit NewProjectCreated(
+			bytes32(bytes(_name)),
+			_name,
+			address(newProject)
+		);
 	}
 
 	/**
@@ -163,6 +169,7 @@ contract RacksProjectManager is
 
 		contributors.push(msg.sender);
 		contributorsData[msg.sender] = Contributor(msg.sender, 0, false);
+
 		emit NewContributorRegistered(msg.sender);
 	}
 
@@ -202,7 +209,7 @@ contract RacksProjectManager is
 		address _account,
 		bool _state
 	) external onlyAdmin {
-		accountIsBanned[_account] = _state;
+		contributorsData[_account].banned = _state;
 
 		if (_state == true) {
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
@@ -225,7 +232,7 @@ contract RacksProjectManager is
 	 */
 	function setAccountToContributorData(
 		address _account,
-		Contributor memory _newData
+		Contributor calldata _newData
 	) public override onlyAdmin {
 		contributorsData[_account] = _newData;
 	}
@@ -240,7 +247,8 @@ contract RacksProjectManager is
 		uint256 _grossReputationPoints,
 		bool _add
 	) public override onlyAdmin {
-		if (_grossReputationPoints <= 0) revert RacksProjectManager_InvalidParameterErr();
+		if (_grossReputationPoints <= 0)
+			revert RacksProjectManager_InvalidParameterErr();
 
 		Contributor memory contributor = contributorsData[_account];
 
@@ -259,6 +267,44 @@ contract RacksProjectManager is
 	 */
 	function setIsPaused(bool _newPausedValue) public onlyAdmin {
 		paused = _newPausedValue;
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */
+	function deleteProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		projectNameExists[projectStore[id].getName()] = false;
+
+		projectId[msg.sender] = 0;
+		projectsList.remove(id);
+
+		emit ProjectDeleted(msg.sender);
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */
+	function finishProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		emit ProjectFinished(msg.sender);
+	}
+
+	/**
+	 * @inheritdoc IRacksProjectManager
+	 */
+	function approveProject() external override {
+		uint256 id = projectId[msg.sender];
+
+		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
+
+		emit ProjectApproved(msg.sender);
 	}
 
 	/**
@@ -295,7 +341,7 @@ contract RacksProjectManager is
 		return hasRole(ADMIN_ROLE, _account);
 	}
 
-	/** 
+	/**
 	 * @notice Returns Holder Validation contract address
 	 */
 	function getHolderValidationInterface()
@@ -306,9 +352,9 @@ contract RacksProjectManager is
 		return holderValidation;
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function getERC20Interface() public view override returns (IERC20) {
 		return erc20;
 	}
@@ -320,35 +366,32 @@ contract RacksProjectManager is
 		return owner();
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
 	 */
 	function isContributorBanned(
 		address _account
-	) external view override returns (bool) {
-		return accountIsBanned[_account];
+	) public view override returns (bool) {
+		return contributorsData[_account].banned;
 	}
 
 	/**
 	 * @notice Get projects depending on Level
-	 * @dev Only callable by Holders
+	 * @param reputationLv Reputation Level
 	 */
-	function getProjects() public view onlyHolder returns (Project[] memory) {
-		if (hasRole(ADMIN_ROLE, msg.sender)) return getAllProjects();
+	function getProjects(
+		uint256 reputationLv
+	) public view returns (Project[] memory) {
 		Project[] memory filteredProjects = new Project[](
 			projectsList.sizeOf()
 		);
 
 		unchecked {
-			uint256 callerReputationLv = getContributorLevel(msg.sender);
-
 			uint256 j = 0;
 			(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
 			while (i != 0 && existNext) {
-				if (
-					projectStore[i].getReputationLevel() <= callerReputationLv
-				) {
+				if (projectStore[i].getReputationLevel() <= reputationLv) {
 					filteredProjects[j] = projectStore[i];
 					++j;
 				}
@@ -359,23 +402,23 @@ contract RacksProjectManager is
 		return filteredProjects;
 	}
 
-	/** 
-	 * @notice Returns true if _account is have at least one NFT of the collections 
+	/**
+	 * @notice Returns true if _account is have at least one NFT of the collections
 	 * authorized otherwise returns false
-	 * 
+	 *
 	 * @param _account Address of the account to check
 	 */
 	function isHolder(address _account) public view returns (bool) {
 		return holderValidation.isHolder(_account) != address(0);
 	}
 
-	function getAllProjects() private view returns (Project[] memory) {
+	function getAllProjects() public view returns (Project[] memory) {
 		Project[] memory allProjects = new Project[](projectsList.sizeOf());
 
 		uint256 j = 0;
 		(bool existNext, uint256 i) = projectsList.getNextNode(0);
 
-		unchecked{
+		unchecked {
 			while (i != 0 && existNext) {
 				allProjects[j] = projectStore[i];
 				++j;
@@ -386,9 +429,9 @@ contract RacksProjectManager is
 		return allProjects;
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function isWalletContributor(
 		address _account
 	) public view override returns (bool) {
@@ -406,7 +449,7 @@ contract RacksProjectManager is
 		return calculateLevel(point);
 	}
 
-	/** 
+	/**
 	 * @inheritdoc IRacksProjectManager
 	 */
 	function getContributorData(
@@ -430,20 +473,8 @@ contract RacksProjectManager is
 
 	/**
 	 * @inheritdoc IRacksProjectManager
-	 */ 
+	 */
 	function isPaused() external view override returns (bool) {
 		return paused;
-	}
-
-	/**
-	 * @inheritdoc IRacksProjectManager
-	 */ 
-	function deleteProject() external override {
-		uint256 id = projectId[msg.sender];
-
-		if (id == 0) revert RacksProjectManager_InvalidParameterErr();
-
-		projectId[msg.sender] = 0;
-		projectsList.remove(id);
 	}
 }
