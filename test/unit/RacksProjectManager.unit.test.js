@@ -41,6 +41,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 				project1 = await ethers.getContractAt("Project", newProjectAddress);
 				project1 = project1.connect(deployer);
 				await project1.approveProject();
+
+				const filter = racksPM.filters.NewProjectCreated(
+					ethers.utils.formatBytes32String("Project1")
+				);
+
+				const events = await racksPM.queryFilter(filter);
+
+				expect(events.length).to.be.equal(1);
 			});
 
 			describe("Setup", () => {
@@ -91,6 +99,13 @@ const { developmentChains } = require("../../helper-hardhat-config");
 						racksPM,
 						"RacksProjectManager_InvalidParameterErr"
 					);
+
+					await expect(
+						racksPM.createProject("Project1", ethers.utils.parseEther("100"), 1, 2)
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
 				});
 
 				it("Should create project and then deleted correctly", async () => {
@@ -105,9 +120,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					const project2 = await ethers.getContractAt("Project", project2Address);
 					await project2.approveProject();
 
-					assert.lengthOf(await racksPM.getProjects(), 2);
+					assert.lengthOf(await racksPM.getAllProjects(), 2);
 
-					let projects = await racksPM.getProjects();
+					let projects = await racksPM.getAllProjects();
 					expect(projects).to.have.same.members([project1.address, project2.address]);
 
 					expect(await project2.isActive()).to.be.true;
@@ -142,7 +157,15 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 					await fundTx.wait();
 
-					await project2.deleteProject();
+					// We should not be able to create a project with the same name
+					await expect(
+						racksPM.createProject("Project2", ethers.utils.parseEther("100"), 1, 2)
+					).to.be.revertedWithCustomError(
+						racksPM,
+						"RacksProjectManager_InvalidParameterErr"
+					);
+
+					expect(await project2.deleteProject()).to.emit(racksPM, "ProjectDeleted");
 
 					expect(await project2.getAccountFunds(user2.address)).to.be.equal(
 						ethers.utils.parseEther("0")
@@ -156,10 +179,19 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					expect(await project2.isActive()).to.be.false;
 					expect(await project2.isDeleted()).to.be.true;
 
-					projects = await racksPM.getProjects();
+					projects = await racksPM.getAllProjects();
 					expect(projects).to.have.same.members([project1.address]);
 
-					await racksPM.createProject("Project3", ethers.utils.parseEther("0"), 1, 2);
+					// We should be able to create a new project with the same name
+					await racksPM.createProject("Project2", ethers.utils.parseEther("0"), 1, 2);
+
+					const filterProjectCreated = racksPM.filters.NewProjectCreated(
+						ethers.utils.formatBytes32String("Project2")
+					);
+
+					const newProjectCreatedEvents = await racksPM.queryFilter(filterProjectCreated);
+
+					expect(newProjectCreatedEvents.length).to.be.equal(2);
 				});
 
 				it("Should revert if the smart contract is paused", async () => {
@@ -213,18 +245,12 @@ const { developmentChains } = require("../../helper-hardhat-config");
 			});
 
 			describe("List Projects according to Contributor Level", () => {
-				it("Should revert if it is not Holder and it is not Admin", async () => {
-					await expect(
-						racksPM.connect(user1).getProjects()
-					).to.be.revertedWithCustomError(racksPM, "RacksProjectManager_NotHolderErr");
-				});
-
 				it("Should retieve only Lv1 Projects called by a Holder", async () => {
 					await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 2);
 					await racksPM.createProject("Project3", ethers.utils.parseEther("100"), 3, 2);
 
 					await mrc.connect(user1).mint(1);
-					const projects = await racksPM.connect(user1).getProjects();
+					const projects = await racksPM.connect(user1).getProjects(1);
 					assert.lengthOf(
 						projects.filter((p) => p !== ethers.constants.AddressZero),
 						1
@@ -235,17 +261,7 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 2);
 					await racksPM.createProject("Project3", ethers.utils.parseEther("100"), 3, 2);
 
-					await mrc.connect(user1).mint(1);
-					await racksPM.connect(user1).registerContributor();
-
-					// set level of contributor to lvl 2
-					await racksPM.setAccountToContributorData(user1.address, [
-						user1.address,
-						100, // 100 points --> lvl 2
-						false,
-					]);
-
-					const projects = await racksPM.connect(user1).getProjects();
+					const projects = await racksPM.connect(user1).getProjects(2);
 					assert.lengthOf(
 						projects.filter((p) => p !== ethers.constants.AddressZero),
 						2
@@ -256,7 +272,8 @@ const { developmentChains } = require("../../helper-hardhat-config");
 					await racksPM.createProject("Project2", ethers.utils.parseEther("100"), 2, 2);
 					await racksPM.createProject("Project3", ethers.utils.parseEther("100"), 3, 2);
 
-					const projects = await racksPM.getProjects();
+					const projects = await racksPM.getAllProjects();
+
 					assert.lengthOf(
 						projects.filter((p) => p !== ethers.constants.AddressZero),
 						3
