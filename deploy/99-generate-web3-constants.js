@@ -27,33 +27,40 @@ async function updateAbi() {
 	const paths = [backendAbiLocation, frontendAbiLocation];
 
 	for (let path of paths) {
+		const folder = `${path}${networkConfig[chainId].name}`;
+		if (!fs.existsSync(folder)) {
+			// La carpeta no existe, así que la creamos
+			fs.mkdirSync(folder);
+			console.log("Folder created: " + networkConfig[chainId].name);
+		}
+
 		const racksProjectManager = await ethers.getContract("RacksProjectManager");
 		fs.writeFileSync(
-			`${path}${networkConfig[chainId].name}/RacksProjectManager.json`,
+			`${folder}/RacksProjectManager.json`,
 			racksProjectManager.interface.format(ethers.utils.FormatTypes.json)
 		);
 
 		const holderValidation = await ethers.getContract("HolderValidation");
 		fs.writeFileSync(
-			`${path}${networkConfig[chainId].name}/HolderValidation.json`,
+			`${folder}/HolderValidation.json`,
 			holderValidation.interface.format(ethers.utils.FormatTypes.json)
 		);
 
 		const mrCrypto = await ethers.getContract("MRCRYPTO");
 		fs.writeFileSync(
-			`${path}${networkConfig[chainId].name}/MRCRYPTO.json`,
+			`${folder}/MRCRYPTO.json`,
 			mrCrypto.interface.format(ethers.utils.FormatTypes.json)
 		);
 
 		const mockErc20 = await ethers.getContract("MockErc20");
 		fs.writeFileSync(
-			`${path}${networkConfig[chainId].name}/MockErc20.json`,
+			`${folder}/MockErc20.json`,
 			mockErc20.interface.format(ethers.utils.FormatTypes.json)
 		);
 
 		const project = await ethers.getContractFactory("Project");
 		fs.writeFileSync(
-			`${path}${networkConfig[chainId].name}/Project.json`,
+			`${folder}/Project.json`,
 			project.interface.format(ethers.utils.FormatTypes.json)
 		);
 	}

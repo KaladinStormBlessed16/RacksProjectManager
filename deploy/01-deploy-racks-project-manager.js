@@ -34,7 +34,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 		waitConfirmations: waitBlockConfirmations,
 	});
 
-	if (deploymentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+	if (deploymentChains.includes(network.name) && process.env.POLYGONSCAN_API_KEY) {
 		log("Verifying...");
 		await verify(holderValidation.address, [MRCAddress]);
 		await verify(racksProjectManager.address, [holderValidation.address]);

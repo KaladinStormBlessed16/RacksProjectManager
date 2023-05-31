@@ -23,7 +23,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 		});
 		log("----------------------------------------------------");
 
-		if (deploymentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+		if (deploymentChains.includes(network.name) && process.env.POLYGONSCAN_API_KEY) {
 			log("Verifying...");
 			await verify(MRCRYPTO.address, mrcArguments);
 			await verify(MockErc20.address, erc20Arguments);

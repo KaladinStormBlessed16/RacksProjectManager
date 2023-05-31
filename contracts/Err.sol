@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.19;
 
 error Project_IsNotEditableErr();
 error Project_FinishedErr();
